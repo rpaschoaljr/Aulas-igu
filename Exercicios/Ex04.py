@@ -10,9 +10,8 @@
 
 a = int(input("Digite o primeiro numero: "))
 b = int(input("Digite o segundo numero: "))
-
+print("Resultado:")
 print(f"{a}x{b}={a*b}")
 print(f"{a}+{b}={a+b}")
 print(f"{a}-{b}={a-b}")
-print(f"{a}/{b}={a/b}")
-print(f"{a}//{b}={a//b}")
+print(f"{a}/{b}={a//b}")
