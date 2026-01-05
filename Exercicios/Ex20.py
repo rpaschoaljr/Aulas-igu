@@ -1,0 +1,8 @@
+entrada = input("Digite as notas separadas por vírgula: ")
+notas = list(map(float, entrada.split(',')))
+media = sum(notas) / len(notas)
+maior_nota = max(notas)
+menor_nota = min(notas)
+print(f'Maior nota: {maior_nota}')
+print(f'Menor nota: {menor_nota}')
+print(f'Média: {media}')
