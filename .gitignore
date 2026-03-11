@@ -1,0 +1,14 @@
+# Arquivos temporários do Code Runner
+tempCodeRunnerFile.py
+
+# Pastas e arquivos do VS Code
+.vscode/
+
+# Arquivos temporários do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de sistema (Linux/Windows)
+.DS_Store
+Thumbs.db
