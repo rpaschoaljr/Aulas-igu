@@ -5,6 +5,8 @@
 #main com menu 1 mostrar 2 vender 3 saldo 4 sair
 from produto import Produto
 from caixa import Caixa
+from funcoes import limpar, marcar_tempo, verificar_numero
+
 caixa = Caixa()
 
 while True:
@@ -15,20 +17,23 @@ while True:
     print("3 - Mostrar produtos")
     print("4 - Saldo de vendas")
     print("5 - Sair")
-    a = int(input("Digite a opção: "))
+  
+    a = input("Digite a opção: ")
+    a = verificar_numero(a)
+
     if a == 5:
         break
     elif a == 1: # cadrastro
         nome = input("Digite o nome: ")
         codigo = input("Digite o codigo: ")
-        preco = float(input("Digite o valor (ex: 1.10): "))
-        quantidade = int(input("Digite a quantidade: "))
+        preco = verificar_numero(input("Digite o valor (ex: 1.10): "))
+        quantidade = verificar_numero(input("Digite a quantidade: "))
         produto = Produto(nome, codigo, preco, quantidade)
         caixa.adicionar(produto)
         continue
     elif a == 2:# vender
         codigo = input("Digite o codigo do produto: ")
-        quantidade = int(input("Digite a quantidade: "))
+        quantidade = verificar_numero(input("Digite a quantidade: "))
         caixa.vender(codigo, quantidade)
         continue
     elif a == 3:# mostrar produtos
@@ -38,4 +43,6 @@ while True:
         caixa.total_vendido()
         continue
     else:
+        limpar()
+        print(marcar_tempo())
         print("Errou!!")
