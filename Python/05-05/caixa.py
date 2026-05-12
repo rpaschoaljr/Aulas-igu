@@ -2,6 +2,7 @@ class Caixa:
     def __init__(self):
         self.produtos = []
         self.totalvendido = 0
+        self.horario = None
         
     def adicionar(self, produto):
         self.produtos.append(produto)
@@ -19,7 +20,7 @@ class Caixa:
         print("Produto não encontrado.")
         return False
     
-    def vender(self, codigo, quantidade):
+    def vender(self, codigo, quantidade, horario):
         produto = self.buscar_produto(codigo)
         if not produto:
             print(" tente outra vez.")
@@ -30,6 +31,7 @@ class Caixa:
         if produto and produto.estoque >= quantidade:
             total = quantidade * produto.preco
             print(f"Total da venda: {total}")
+            self.horario = horario
             produto.estoque -= quantidade
             self.totalvendido += total
                        

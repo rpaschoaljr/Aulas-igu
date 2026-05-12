@@ -1,4 +1,4 @@
-from class_car import car
+from Python.Classes.class_car import car
 
 carro1 = car("Toyota", 2020, "Vermelho")
 carro1.mostrar_informacoes()

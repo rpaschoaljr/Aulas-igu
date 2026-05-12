@@ -34,7 +34,7 @@ while True:
     elif a == 2:# vender
         codigo = input("Digite o codigo do produto: ")
         quantidade = verificar_numero(input("Digite a quantidade: "))
-        caixa.vender(codigo, quantidade)
+        caixa.vender(codigo, quantidade, marcar_tempo())
         continue
     elif a == 3:# mostrar produtos
         caixa.listra_produtos()
@@ -46,3 +46,4 @@ while True:
         limpar()
         print(marcar_tempo())
         print("Errou!!")
+    limpar()

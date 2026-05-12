@@ -14,10 +14,7 @@ def marcar_tempo():
     return hora_formatada
 def verificar_numero(x):
     if x.isdigit():
-        if int(x) == float(x):
-            return int(x)
-        else:
-            return float(x)
+        return float(x)
     else:
         limpar()
         print("Valor inválido. Digite um número.")    
