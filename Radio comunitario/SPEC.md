@@ -93,3 +93,8 @@ erDiagram
 
 - Todo campo usado em busca/unicidade tem duas colunas: `campo` (valor digitado, exibido no front) e `campo_normalized` (`trim` + `lowercase`, usado em busca e constraint UNIQUE).
 - Identificadores são UUID; senhas armazenadas só como hash bcrypt.
+- Músicas são deduplicadas por `youtube_id` (UNIQUE): a mesma música do YouTube nunca é
+  armazenada duas vezes. A busca registra (upsert) as músicas retornadas; adicionar à fila
+  apenas referencia o registro existente.
+- `title` é apenas exibição e **não** é usado para unicidade (músicas diferentes podem ter o
+  mesmo título). `youtube_id` é case-sensitive — apenas `trim`, sem `lowercase`.

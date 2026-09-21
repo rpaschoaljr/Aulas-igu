@@ -1,0 +1,12 @@
+.button {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--surface-alt);
+}

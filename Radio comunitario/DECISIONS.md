@@ -60,6 +60,15 @@ Decisões de design do projeto Rádio Comunitária. Para cada decisão: o que es
 
 ---
 
+## 9. Chave natural de Song
+
+- **Escolhida:** `youtube_id` como chave natural/única de `SONG` (deduplicação de músicas).
+- **Alternativa descartada:** título normalizado (`trim` + `lowercase` do `title`); hash/fingerprint de título + artista.
+- **Motivo:** o `youtube_id` é estável e único por vídeo no YouTube, enquanto o título pode se repetir entre músicas diferentes e pode mudar com o tempo. O banco já garante `UNIQUE` em `youtube_id`; a busca faz upsert e o "adicionar à fila" apenas referencia o registro existente. O `title` fica como exibição, sem participar da unicidade.
+- **O que me faria mudar de ideia:** se o requisito virasse "a mesma música em vídeos diferentes deve ser tratada como duplicado", eu precisaria de um fingerprint de áudio/ISRC em vez do `youtube_id`.
+
+---
+
 ## Exercício da fase (bônus)
 
 O exercício "pergunta neutra vs. pergunta enviesada" (Python vs. Java) será registrado aqui após a comparação das respostas da IA. *(Pendente — a ser preenchido pelo aluno.)*

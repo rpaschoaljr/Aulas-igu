@@ -1,0 +1,58 @@
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.thumb {
+  width: 100%;
+  max-width: 120px;
+  border-radius: var(--radius-md);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-lg);
+}
+
+.duration {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.skip {
+  background: var(--primary);
+  color: var(--surface);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+.skip:hover {
+  background: var(--primary-hover);
+}
+
+.empty {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.player {
+  width: 100%;
+}

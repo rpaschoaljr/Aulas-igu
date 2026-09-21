@@ -23,6 +23,7 @@ Este documento define as diretrizes para agentes de IA atuando neste repositóri
 * **Python:** PEP 8, type hints, FastAPI + Pydantic (validação antes do banco), pytest. Queries sempre parametrizadas.
 * **React:** componentes funcionais e hooks (Vite).
 * **Estilização (CSS):** Nunca hardcodar valores. Usar **CSS Variables (design tokens) + CSS Modules**. **Proibido Tailwind.** Seguir obrigatoriamente os tokens de `design-system.md`.
+* **Comunicação:** o frontend nunca chama serviço externo diretamente (YouTube, SMTP, etc.). Toda chamada externa passa pelo backend, que detém as chaves via `.env`. O front fala apenas com o nosso backend (REST `/api/*` e WebSocket `/ws`).
 * **Segurança e OWASP Top 10:** seguir rigorosamente. SQL Injection: queries parametrizadas no back e validação estrita no front. Senha com bcrypt, JWT com revogação (`token_version`), verificação de e-mail obrigatória. Apelido e e-mail únicos via campo normalizado (trim + lowercase).
 * **Idioma:** variáveis, funções e código em inglês. Comentários e documentações em português.
 * **Variáveis de Ambiente:** nunca hardcodar senhas ou chaves. Usar variáveis de ambiente e `.env` local (não commitado).
