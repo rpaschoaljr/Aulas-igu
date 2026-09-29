@@ -16,31 +16,18 @@ from radio_backend.schemas.radio import (
     QueueAddRequest,
     QueueAddResponse,
     QueueItemOut,
-    SongResult,
     VoteResponse,
 )
 from radio_backend.security.deps import get_current_user
 from radio_backend.services import playback
+from radio_backend.services.playback import QUEUE_LOCK_KEY
+from radio_backend.ws.broadcast import broadcast_queue
+from radio_backend.ws.payloads import to_item_out
 
 router = APIRouter(prefix="/queue", tags=["queue"])
 
 QUEUE_LIMIT = 3
 REPETITION_WINDOW = 20
-QUEUE_LOCK_KEY = 1
-
-
-def _to_item_out(item: QueueItem, song: Song) -> QueueItemOut:
-    return QueueItemOut(
-        id=str(item.id),
-        position=item.position,
-        added_by=str(item.added_by) if item.added_by else None,
-        song=SongResult(
-            youtube_id=song.youtube_id,
-            title=song.title,
-            duration=song.duration,
-            thumbnail=song.thumbnail,
-        ),
-    )
 
 
 @router.get("", response_model=list[QueueItemOut])
@@ -54,7 +41,7 @@ async def list_queue(
         .join(Song, Song.id == QueueItem.song_id)
         .order_by(QueueItem.position)
     )
-    return [_to_item_out(item, song) for item, song in result.all()]
+    return [to_item_out(item, song) for item, song in result.all()]
 
 
 @router.post("", response_model=QueueAddResponse, status_code=201)
@@ -96,6 +83,8 @@ async def add_to_queue(
     session.add(item)
     await session.flush()
     await session.commit()
+
+    await broadcast_queue(session)
 
     return QueueAddResponse(id=str(item.id), position=position)
 

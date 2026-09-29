@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,3 +54,30 @@ async def test_history_returns_entries(
     assert len(entries) == 1
     assert entries[0]["song"]["youtube_id"] == "abc123"
     assert entries[0]["played_at"] is not None
+
+
+async def test_history_pagination(
+    client: AsyncClient, auth_headers: dict[str, str], raw_session: AsyncSession
+) -> None:
+    for i in range(12):
+        song = Song(youtube_id=f"vid{i}", title=f"M{i}", duration=100, thumbnail="")
+        raw_session.add(song)
+        await raw_session.flush()
+        raw_session.add(
+            History(
+                song_id=song.id,
+                played_at=datetime.now(UTC) - timedelta(minutes=i),
+            )
+        )
+    await raw_session.commit()
+
+    page1 = await client.get("/api/history?limit=10&offset=0", headers=auth_headers)
+    assert page1.status_code == 200
+    assert len(page1.json()) == 10
+
+    page2 = await client.get("/api/history?limit=10&offset=10", headers=auth_headers)
+    assert page2.status_code == 200
+    entries2 = page2.json()
+    assert len(entries2) == 2
+    # Ordenado do mais recente para o mais antigo.
+    assert entries2[0]["song"]["youtube_id"] == "vid10"

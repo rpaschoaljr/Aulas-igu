@@ -1,11 +1,12 @@
 .page {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: var(--space-5);
   max-width: 480px;
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
   min-height: 100vh;
+  align-content: start;
 }
 
 .header {
@@ -41,7 +42,42 @@
   background: var(--surface-alt);
 }
 
-.section {
+.playerCol {
+  width: 100%;
+}
+
+.mobileActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.mobileButton {
+  flex: 1;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.mobileButton:hover {
+  background: var(--surface-alt);
+}
+
+/* Painéis laterais (Histórico/Busca): escondidos no mobile, abertos via botão. */
+.sidebar {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.sidebar.open {
+  display: flex;
+}
+
+.queue {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -61,4 +97,44 @@
 .error {
   color: var(--danger);
   margin: 0;
+}
+
+/* Tela larga: 3 colunas (Histórico | Player | Busca) com a Fila embaixo. */
+@media (min-width: 768px) {
+  .page {
+    max-width: 1200px;
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-areas:
+      'header header header'
+      'history player search'
+      'queue  queue  queue';
+  }
+
+  .header {
+    grid-area: header;
+  }
+
+  .historyCol {
+    grid-area: history;
+  }
+
+  .playerCol {
+    grid-area: player;
+  }
+
+  .searchCol {
+    grid-area: search;
+  }
+
+  .queue {
+    grid-area: queue;
+  }
+
+  .sidebar {
+    display: flex;
+  }
+
+  .mobileActions {
+    display: none;
+  }
 }

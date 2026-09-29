@@ -90,8 +90,10 @@ Vota para pular. Idempotente: voto duplicado do mesmo usuário não conta.
 
 - `404` se o item da fila não existir.
 
-### `GET /history`
-Retorna o histórico (música, `played_at`, quem adicionou).
+### `GET /history?limit=&offset=`
+Retorna o histórico (música, `played_at`, quem adicionou), paginado do mais recente para o mais antigo.
+
+- `limit` (padrão `10`, máximo `50`) e `offset` (padrão `0`) controlam a paginação.
 
 ### `GET /state`
 Estado atual de reprodução (fallback REST do WebSocket).
@@ -118,6 +120,8 @@ Conexão autenticada (JWT na query `?token=` ou no primeiro frame).
 | `mute_until_next` | — |
 | `mute_until_song` | `{ "song_id" }` |
 | `vote` | `{ "queue_item_id" }` |
+| `playback_report` | `{ "song_id", "duration", "load_offset" }` — enviado no `PLAYING`: corrige a duração real (IFrame), registra o atraso de carregamento e crava o `started_at` real (primeira confirmação) |
+| `playback_ended` | `{ "song_id" }` — enviado no `ENDED`: o backend avança para a próxima música |
 | `ping` | — |
 
 ## Segurança

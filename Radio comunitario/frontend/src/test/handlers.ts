@@ -74,7 +74,12 @@ export const handlers = [
 
   http.post('*/api/queue/:id/vote', () => HttpResponse.json({ status: 'ok' })),
 
-  http.get('*/api/history', () => HttpResponse.json(history)),
+  http.get('*/api/history', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = Number(url.searchParams.get('limit') ?? 10)
+    const offset = Number(url.searchParams.get('offset') ?? 0)
+    return HttpResponse.json(history.slice(offset, offset + limit))
+  }),
 
   http.get('*/api/state', () =>
     HttpResponse.json({

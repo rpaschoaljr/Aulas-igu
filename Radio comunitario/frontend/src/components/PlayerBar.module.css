@@ -53,6 +53,49 @@
   margin: 0;
 }
 
+.error {
+  color: var(--danger);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.playerWrap {
+  position: relative;
+  width: 100%;
+}
+
 .player {
   width: 100%;
+}
+
+/* Camada transparente sobre o iframe: captura os cliques (sem pointer-events:
+   none) para impedir interação direta com o player do YouTube. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: transparent;
+  cursor: default;
+}
+
+/* Banner exibido enquanto o áudio está mudo (política de autoplay). Fica acima
+   do overlay para permanecer clicável: o clique desbloqueia o som. */
+.unmuteBanner {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-4);
+  transform: translateX(-50%);
+  z-index: 20;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+}
+
+.unmuteBanner:hover {
+  background: var(--surface-alt);
 }

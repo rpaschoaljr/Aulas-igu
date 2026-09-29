@@ -7,6 +7,19 @@ Decisões de design do projeto Rádio Comunitária. Para cada decisão: o que es
 - **Escolhida:** player sincronizado pelo backend — o servidor é a fonte única da verdade do "relógio" de reprodução. Cada navegador sincroniza com o estado enviado pelo backend.
 - **Alternativa descartada:** (a) player físico único na sala ("caixa de som"); (b) cada navegador tocando de forma independente.
 - **Motivo:** comportamento de rádio real — quem entra pega a música no meio, e todos ouvem sincronizados. O backend manda `song_id + started_at + duration` e o cliente faz o seek. O player físico único foi descartado por exigir um dispositivo dedicado e complicar o controle remoto pelos celulares; o navegador independente foi descartado por dessincronizar os ouvintes (cada um ouviria em um ponto diferente).
+- **Implementação da sincronização (três frentes):**
+  1. **Relógio único + correção de drift:** o backend guarda `started_at` + `duration`
+     (`PlaybackState`) e envia via REST/WebSocket; o cliente entra na música com
+     `cueVideoById(videoId, offset)`. Como buffering/latência dessincronizam aos poucos,
+     a cada 30s o cliente compara `player.getCurrentTime()` com o esperado e, se a
+     diferença passar de 2s, faz `seekTo(expected, true)`.
+  2. **Bloqueio de controles:** player incorporado com `controls: 0` e `disablekb: 1`,
+     mais uma camada transparente (`position: absolute; inset: 0`) que captura os cliques
+     sobre o iframe. O player continua visível em 16:9; só existem os controles da rádio
+     (Pular, Mudo).
+  3. **Autoplay (fallback mudo):** navegadores não permitem som automático sem interação.
+     O player **inicia mudo** (`mute()` no `onReady`) e um banner "Clique para ativar o
+     som" desbloqueia o áudio — o clique é o gesto exigido pela política de autoplay.
 - **O que me faria mudar de ideia:** se virar requisito uma caixa de som física na sala, adotaria o modo "caixa de som" (bônus do PROJETO.md).
 
 ## 2. Linguagem do back-end

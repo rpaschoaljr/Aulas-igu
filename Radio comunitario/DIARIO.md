@@ -151,3 +151,42 @@ Registro por tarefa: o que a IA acertou, onde errou e o que foi feito na mão.
   ligar o front ao `/state`; feito com `usePlaybackState` + `cueVideoById(videoId, offset)` no
   `usePlayer` (entra no meio da música, todos juntos).
 - **O que foi feito na mão:** (preencher).
+
+## Sincronização do player — controles, drift e autoplay
+
+- **Status:** concluído.
+- **O que foi feito:** bloqueio de controles do player (`controls: 0` + `disablekb: 1`
+  + overlay transparente que captura cliques sobre o iframe, mantendo o player visível
+  16:9); correção de drift (a cada 30s compara `getCurrentTime()` com o esperado e faz
+  `seekTo` se passar de 2s, via utilitários puros `expectedOffsetSeconds`/`shouldResync`
+  em `utils/playbackSync.ts`); fallback mudo de autoplay (player inicia em `mute()` e
+  banner "Clique para ativar o som"). Sem mudança no contrato (`API.md`) nem no backend.
+- **Testes:** Vitest 43 no total (novos: 7 de `playbackSync`, 5 do `usePlayer` com
+  `FakePlayer`, 3 do banner no `PlayerBar`); `oxlint` 0/0 e `tsc`/`vite build` limpos.
+- **O que a IA acertou:** (preencher).
+- **O que a IA errou:** (preencher).
+- **O que foi feito na mão:** (preencher).
+
+## Erros encontrados e corrigidos (caracteres, DJ e sincronização)
+
+1. **Título com entidades HTML** — a YouTube Data API devolve o `snippet.title` com
+   entidades (`&quot;`, `&amp;`, `&#39;`…), e a busca gravava o título do jeito que
+   vinha, exibindo `Skillet - &quot;The Resistance&quot;`. Corrigido com
+   `html.unescape(...)` em `services/youtube.py` (+ teste em `test_youtube.py`).
+
+2. **Sincronização cortava ~30s por música** — o desenho original decidia o "fim" por
+   relógio de parede (`started_at + duration`) e a correção de drift fazia `seekTo`
+   para frente (pulando áudio). Como o front só começa a tocar de verdade **depois** do
+   carregamento (atraso `load_offset` que era medido mas ignorado), cada troca perdia
+   esses segundos. Reformulado para o avanço ser dirigido pelo evento real `ENDED`
+   (nova mensagem `playback_ended`) e o `started_at` ser cravado no `PLAYING` (via
+   `playback_report`); o `tick()` passou a ser só um fallback de segurança
+   (`duration + SAFETY_MARGIN`).
+
+3. **DJ automático ausente** — tinha sido planejado mas não implementado: o
+   `_start_next` simplesmente parava a música quando a fila esvaziava. Implementado com
+   um baralho do histórico (sorteia sem repetir até esgotar o ciclo) e prioridade à fila
+   entre uma música do DJ e outra.
+
+- **O que a IA acertou:** (preencher).
+- **O que foi feito na mão:** (preencher).

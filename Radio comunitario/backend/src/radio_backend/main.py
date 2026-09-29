@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from radio_backend.config import get_settings
 from radio_backend.routers import auth, health, history, queue, songs, state
+from radio_backend.ws.router import router as ws_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -44,6 +45,7 @@ app.include_router(songs.router, prefix="/api")
 app.include_router(queue.router, prefix="/api")
 app.include_router(state.router, prefix="/api")
 app.include_router(history.router, prefix="/api")
+app.include_router(ws_router)
 
 
 @app.exception_handler(RequestValidationError)

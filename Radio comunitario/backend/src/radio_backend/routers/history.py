@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,11 +18,15 @@ router = APIRouter(tags=["history"])
 async def get_history(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[HistoryEntryOut]:
     result = await session.execute(
         select(History, Song)
         .join(Song, Song.id == History.song_id)
         .order_by(History.played_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     return [
         HistoryEntryOut(

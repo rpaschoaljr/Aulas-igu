@@ -75,6 +75,27 @@ async def test_search_songs_parses_duration_and_thumbnail() -> None:
     ]
 
 
+async def test_search_songs_unescapes_title_html_entities() -> None:
+    client = _client(
+        {
+            "items": [
+                {
+                    "id": {"videoId": "abc123"},
+                    "snippet": {
+                        "title": 'Skillet - &quot;The Resistance&quot; &amp; mais',
+                        "thumbnails": {},
+                    },
+                }
+            ]
+        },
+        {"items": [{"id": "abc123", "contentDetails": {"duration": "PT3M7S"}}]},
+    )
+    async with client:
+        results = await search_songs("resistance", client=client)
+
+    assert results[0]["title"] == 'Skillet - "The Resistance" & mais'
+
+
 async def test_search_songs_prefers_medium_thumbnail() -> None:
     client = _client(
         {
@@ -133,3 +154,56 @@ async def test_search_songs_missing_duration_defaults_to_zero() -> None:
         results = await search_songs("sem duracao", client=client)
 
     assert results[0]["duration"] == 0
+
+
+async def test_search_songs_requests_embeddable_only() -> None:
+    captured: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/search" in str(request.url):
+            captured.append(str(request.url))
+            return httpx.Response(200, json={"items": []})
+        if "/videos" in str(request.url):
+            return httpx.Response(200, json={"items": []})
+        return httpx.Response(404, json={})
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    async with client:
+        await search_songs("embutivel", client=client)
+
+    assert captured, "a busca deveria chamar a YouTube API"
+    assert "videoEmbeddable=true" in captured[0]
+
+
+async def test_search_songs_filters_non_embeddable() -> None:
+    search_payload = {
+        "items": [
+            {
+                "id": {"videoId": "good1"},
+                "snippet": {"title": "Embutível", "thumbnails": {}},
+            },
+            {
+                "id": {"videoId": "bad1"},
+                "snippet": {"title": "Não embutível", "thumbnails": {}},
+            },
+        ]
+    }
+    videos_payload = {
+        "items": [
+            {
+                "id": "good1",
+                "contentDetails": {"duration": "PT1M"},
+                "status": {"embeddable": True},
+            },
+            {
+                "id": "bad1",
+                "contentDetails": {"duration": "PT2M"},
+                "status": {"embeddable": False},
+            },
+        ]
+    }
+    client = _client(search_payload, videos_payload)
+    async with client:
+        results = await search_songs("filtro", client=client)
+
+    assert [r["youtube_id"] for r in results] == ["good1"]

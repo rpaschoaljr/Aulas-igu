@@ -1,5 +1,6 @@
 """Cliente da YouTube Data API v3 (busca de músicas)."""
 
+import html
 import re
 import time
 
@@ -57,6 +58,7 @@ async def search_songs(
             params={
                 "part": "snippet",
                 "type": "video",
+                "videoEmbeddable": "true",
                 "maxResults": max_results,
                 "q": query,
                 "key": settings.youtube_api_key,
@@ -77,20 +79,31 @@ async def search_songs(
         videos_response = await client.get(
             VIDEOS_URL,
             params={
-                "part": "contentDetails",
+                "part": "contentDetails,status",
                 "id": ",".join(video_ids),
                 "key": settings.youtube_api_key,
             },
         )
         videos_response.raise_for_status()
+        video_details = videos_response.json().get("items", [])
         durations = {
             item["id"]: item["contentDetails"]["duration"]
-            for item in videos_response.json().get("items", [])
+            for item in video_details
+        }
+        # Salvaguarda: `videoEmbeddable` da busca é indicativo, mas o status
+        # real vem aqui. Vídeos explicitamente não incorporáveis são descartados
+        # para evitar o erro "tente novamente mais tarde" no player embutido.
+        non_embeddable_ids = {
+            item["id"]
+            for item in video_details
+            if item.get("status", {}).get("embeddable") is False
         }
 
         results: list[dict[str, object]] = []
         for item in items:
             video_id = item["id"]["videoId"]
+            if video_id in non_embeddable_ids:
+                continue
             snippet = item.get("snippet", {})
             thumbnails = snippet.get("thumbnails", {})
             thumbnail = (
@@ -101,7 +114,9 @@ async def search_songs(
             results.append(
                 {
                     "youtube_id": video_id,
-                    "title": snippet.get("title", ""),
+                    # A YouTube API devolve o título com entidades HTML codificadas
+                    # (&quot;, &amp;, &#39;...); desfazemos antes de gravar/exibir.
+                    "title": html.unescape(snippet.get("title", "")),
                     "duration": parse_duration(durations.get(video_id, "PT0S")),
                     "thumbnail": thumbnail,
                 }

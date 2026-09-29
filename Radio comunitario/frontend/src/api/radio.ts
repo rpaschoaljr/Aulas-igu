@@ -52,8 +52,8 @@ export function vote(queueItemId: string): Promise<{ status: string }> {
   })
 }
 
-export function getHistory(): Promise<HistoryEntry[]> {
-  return apiFetch<HistoryEntry[]>('/api/history')
+export function getHistory(limit = 10, offset = 0): Promise<HistoryEntry[]> {
+  return apiFetch<HistoryEntry[]>(`/api/history?limit=${limit}&offset=${offset}`)
 }
 
 export function getState(): Promise<PlaybackState> {

@@ -22,7 +22,7 @@ Cada regra abaixo tem pelo menos um teste automatizado.
 3. **Repetição:** uma música não pode ser adicionada se estiver entre as **últimas 20** tocadas.
 4. **Voto duplicado:** o mesmo ouvinte não pode votar duas vezes na mesma música (segundo voto não conta).
 5. **Saída da rádio:** quem sai perde o voto; as músicas que ele adicionou **continuam na fila**.
-6. **DJ automático:** quando a fila esvazia, o DJ assume. Se o histórico tiver **≥30 músicas**, sorteia entre elas; caso contrário, faz busca aleatória no YouTube. A fila nunca fica vazia enquanto houver ouvintes.
+6. **DJ automático:** quando a fila esvazia e há ouvintes, o DJ assume: sorteia **uma** música do histórico (as que já tocaram) sem repetir até todas terem sido tocadas, e toca. Ao terminar, volta a verificar a fila — se houver músicas adicionadas, toca-as; senão, sorteia outra do histórico. A fila nunca fica vazia enquanto houver ouvintes. Não usa o YouTube.
 7. **Falha da YouTube API:** se a busca falhar, o sistema avisa e continua funcionando (não trava).
 8. **Concorrência:** dois ouvintes adicionando ou votando ao mesmo tempo não podem corromper a fila (transação/lock).
 9. **Senha:** mínimo 8 caracteres, com pelo menos 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial.

@@ -22,7 +22,6 @@ class Settings(BaseSettings):
     skip_percentage: float = 0.5
     queue_limit: int = 3
     repetition_window: int = 20
-    dj_history_min: int = 30
 
 
 @lru_cache
