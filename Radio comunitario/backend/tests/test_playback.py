@@ -88,6 +88,37 @@ async def test_tick_advances_on_safety_timeout(db_session: AsyncSession) -> None
     assert history[0].song_id == song1.id
 
 
+async def test_advance_does_not_accumulate_duplicate_history(
+    db_session: AsyncSession,
+) -> None:
+    song = await _song(db_session, "dedup", duration=10)
+    db_session.add(
+        History(
+            song_id=song.id,
+            played_at=datetime.now(UTC) - timedelta(hours=1),
+        )
+    )
+    db_session.add(QueueItem(song_id=song.id, position=1))
+    await db_session.flush()
+    db_session.add(
+        PlaybackState(
+            id=1,
+            current_song_id=song.id,
+            started_at=datetime.now(UTC) - timedelta(seconds=60),
+        )
+    )
+    await db_session.commit()
+
+    await playback.tick(db_session)
+
+    history = (
+        (await db_session.execute(select(History).where(History.song_id == song.id)))
+        .scalars()
+        .all()
+    )
+    assert len(history) == 1
+
+
 async def test_tick_skip_when_votes_exceed_half(db_session: AsyncSession) -> None:
     song1 = await _song(db_session, "a", duration=100)
     song2 = await _song(db_session, "b", duration=100)

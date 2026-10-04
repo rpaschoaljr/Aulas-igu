@@ -1,10 +1,11 @@
 // Tipagem mínima da YouTube IFrame Player API (carregada via script, sem pacote npm).
 interface YouTubePlayer {
-  loadVideoById(videoId: string): void
+  loadVideoById(videoId: string, startSeconds?: number): void
   cueVideoById(videoId: string, startSeconds?: number): void
   mute(): void
   unMute(): void
   isMuted(): boolean
+  setVolume(volume: number): void
   playVideo(): void
   pauseVideo(): void
   getCurrentTime(): number
@@ -20,6 +21,8 @@ interface YouTubePlayerOptions {
     rel?: number
     playsinline?: number
     disablekb?: number
+    enablejsapi?: number
+    origin?: string
   }
   events?: {
     onReady?: (event: { target: YouTubePlayer }) => void

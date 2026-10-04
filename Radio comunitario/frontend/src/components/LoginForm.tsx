@@ -12,6 +12,7 @@ export function LoginForm() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    console.warn('[BTN] entrar', { login })
     setError(null)
     setLoading(true)
     try {

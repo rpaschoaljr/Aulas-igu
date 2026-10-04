@@ -144,6 +144,52 @@ async def test_add_repetition_rejected(
     assert resp.status_code == 400
 
 
+async def test_add_allowed_after_three_songs_in_history(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+    mock_search,
+    raw_session: AsyncSession,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    songs = [
+        {"youtube_id": f"vid{i}", "title": f"M{i}", "duration": 100, "thumbnail": ""}
+        for i in range(4)
+    ]
+    mock_search(songs)
+    await client.get("/api/songs/search", params={"q": "x"}, headers=auth_headers)
+
+    db_songs = (await raw_session.execute(select(Song))).scalars().all()
+    song_map = {s.youtube_id: s for s in db_songs}
+
+    now = datetime.now(UTC)
+    raw_session.add(
+        History(song_id=song_map["vid0"].id, played_at=now - timedelta(minutes=40))
+    )
+    raw_session.add(
+        History(song_id=song_map["vid1"].id, played_at=now - timedelta(minutes=30))
+    )
+    raw_session.add(
+        History(song_id=song_map["vid2"].id, played_at=now - timedelta(minutes=20))
+    )
+    raw_session.add(
+        History(song_id=song_map["vid3"].id, played_at=now - timedelta(minutes=10))
+    )
+    await raw_session.commit()
+
+    # vid0 já teve 3 músicas tocadas depois (vid1, vid2, vid3): pode ser adicionada
+    resp0 = await client.post(
+        "/api/queue", json={"youtube_id": "vid0"}, headers=auth_headers
+    )
+    assert resp0.status_code == 201
+
+    # vid1 ainda está entre as últimas 3: rejeitada
+    resp1 = await client.post(
+        "/api/queue", json={"youtube_id": "vid1"}, headers=auth_headers
+    )
+    assert resp1.status_code == 400
+
+
 async def test_vote_nonexistent_item(
     client: AsyncClient, auth_headers: dict[str, str]
 ) -> None:

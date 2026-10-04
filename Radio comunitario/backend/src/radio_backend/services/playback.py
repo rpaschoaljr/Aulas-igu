@@ -141,6 +141,10 @@ async def _start_next(session: AsyncSession, state: PlaybackState) -> bool:
         return False
     state.current_song_id = first.song_id
     state.started_at = datetime.now(UTC)
+    print(
+        f"[BACK][PLAY] _start_next song={first.song_id} "
+        f"started_at={state.started_at.isoformat()}"
+    )
     return True
 
 
@@ -157,6 +161,9 @@ async def _advance(session: AsyncSession, state: PlaybackState) -> None:
         )
     ).scalar_one_or_none()
     if first is not None:
+        # Remove entrada anterior da mesma música para evitar acúmulo no histórico
+        # e manter probabilidades equilibradas no DJ automático.
+        await session.execute(delete(History).where(History.song_id == first.song_id))
         session.add(
             History(
                 song_id=first.song_id,
@@ -183,6 +190,10 @@ async def confirm_started(session: AsyncSession, song_id: uuid.UUID) -> bool:
         return False
     _confirmed_start_song_id = song_id
     state.started_at = datetime.now(UTC)
+    print(
+        f"[BACK][PLAY] confirm_started song={song_id} "
+        f"started_at={state.started_at.isoformat()}"
+    )
     await session.commit()
     await broadcast_state(session)
     return True
@@ -198,6 +209,7 @@ async def confirm_ended(session: AsyncSession, song_id: uuid.UUID) -> bool:
     )
     state = await _get_state(session)
     advanced = state.current_song_id == song_id
+    print(f"[BACK][PLAY] confirm_ended song={song_id} advanced={advanced}")
     if advanced:
         await _advance(session, state)
     await session.commit()

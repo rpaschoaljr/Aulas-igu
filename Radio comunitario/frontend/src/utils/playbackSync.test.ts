@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { expectedOffsetSeconds, shouldResync } from './playbackSync'
+import {
+  expectedOffsetSeconds,
+  shouldResync,
+  shouldSeekBack,
+} from './playbackSync'
 
 describe('expectedOffsetSeconds', () => {
   it('retorna 0 sem startedAt', () => {
@@ -38,5 +42,26 @@ describe('shouldResync', () => {
   it('aceita um limiar customizado', () => {
     expect(shouldResync(40, 45, 5)).toBe(false)
     expect(shouldResync(40, 45.1, 5)).toBe(true)
+  })
+})
+
+describe('shouldSeekBack', () => {
+  it('recua quando o player está adiantado', () => {
+    expect(shouldSeekBack(40, 43)).toBe(true)
+  })
+
+  it('não recua quando a diferença é pequena', () => {
+    expect(shouldSeekBack(40, 40.5)).toBe(false)
+    expect(shouldSeekBack(40, 42)).toBe(false)
+  })
+
+  it('nunca recua quando o player está atrás (não pula para frente)', () => {
+    expect(shouldSeekBack(40, 30)).toBe(false)
+    expect(shouldSeekBack(40, 0)).toBe(false)
+  })
+
+  it('aceita um limiar customizado', () => {
+    expect(shouldSeekBack(40, 45, 5)).toBe(false)
+    expect(shouldSeekBack(40, 45.1, 5)).toBe(true)
   })
 })

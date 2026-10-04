@@ -12,6 +12,7 @@ export function RegisterForm() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    console.warn('[BTN] cadastrar', { nickname, email })
     setError(null)
     setLoading(true)
     try {

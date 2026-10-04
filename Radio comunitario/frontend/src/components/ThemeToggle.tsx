@@ -20,7 +20,10 @@ export function ThemeToggle() {
     <button
       type="button"
       className={styles.toggle}
-      onClick={() => setMode(NEXT[mode])}
+      onClick={() => {
+        console.warn('[BTN] tema', { de: mode, para: NEXT[mode] })
+        setMode(NEXT[mode])
+      }}
     >
       Tema: {LABELS[mode]}
     </button>

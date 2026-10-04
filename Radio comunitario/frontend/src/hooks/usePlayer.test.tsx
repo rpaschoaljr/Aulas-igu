@@ -46,13 +46,18 @@ class FakePlayer {
     return this.muted
   }
 
+  setVolume(_volume: number) {}
+
   playVideo() {
     this.played = true
   }
 
   pauseVideo() {}
 
-  loadVideoById(_videoId: string) {}
+  loadVideoById(videoId: string, startSeconds?: number) {
+    this.cued = { videoId, startSeconds }
+    this.played = true
+  }
 
   cueVideoById(videoId: string, startSeconds?: number) {
     this.cued = { videoId, startSeconds }
@@ -133,7 +138,7 @@ describe('usePlayer', () => {
     expect(player.cued).toEqual({ videoId: 'abc', startSeconds: 10 })
   })
 
-  it('ressincroniza quando o player se afasta do relógio', async () => {
+  it('recua quando o player está adiantado', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-21T00:00:00Z'))
     const startedAt = '2026-09-20T23:59:50Z'
@@ -146,17 +151,16 @@ describe('usePlayer', () => {
     const player = FakePlayer.instances[0]
     act(() => player.emitReady())
 
-    player.currentTime = 100 // drift grande
+    player.currentTime = 100 // muito adiantado
     act(() => {
       vi.advanceTimersByTime(30000)
     })
 
     expect(player.seekedTo).not.toBeNull()
-    expect(player.seekedTo?.allowSeekAhead).toBe(true)
-    expect(player.seekedTo?.seconds).toBeCloseTo(40, 5)
+    expect(player.seekedTo?.allowSeekAhead).toBe(false)
   })
 
-  it('não ressincroniza quando o player acompanha o relógio', async () => {
+  it('não recua quando o player acompanha o relógio', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-21T00:00:00Z'))
     const startedAt = '2026-09-20T23:59:50Z'
@@ -175,6 +179,27 @@ describe('usePlayer', () => {
     })
 
     expect(player.seekedTo).toBeNull()
+  })
+
+  it('não pula para frente quando o player está atrás', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-21T00:00:00Z'))
+    const startedAt = '2026-09-20T23:59:50Z'
+    const ref: RefObject<HTMLDivElement | null> = {
+      current: document.createElement('div'),
+    }
+
+    renderHook(() => usePlayer('abc', startedAt, ref))
+    await act(async () => {})
+    const player = FakePlayer.instances[0]
+    act(() => player.emitReady())
+
+    player.currentTime = 0 // atrás do esperado
+    act(() => {
+      vi.advanceTimersByTime(30000)
+    })
+
+    expect(player.seekedTo).toBeNull() // nunca pula para frente
   })
 
   it('reporta duração real e offset ao começar a tocar', async () => {

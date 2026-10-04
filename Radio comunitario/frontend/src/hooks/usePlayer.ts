@@ -4,7 +4,7 @@ import type { PlaybackMessage } from '../api/ws'
 import { isFatalPlaybackError } from '../utils/youtubeErrors'
 import {
   expectedOffsetSeconds,
-  shouldResync,
+  shouldSeekBack,
   RESYNC_INTERVAL_MS,
 } from '../utils/playbackSync'
 
@@ -51,6 +51,10 @@ export function usePlayer(
   const cueStartAtRef = useRef<number | null>(null)
   const reportedVideoIdRef = useRef<string | null>(null)
   const endedVideoIdRef = useRef<string | null>(null)
+  const lastCuedVideoRef = useRef<string | null>(null)
+  const cuePerfRef = useRef<number>(0)
+  const cueOffsetRef = useRef<number>(0)
+  const retriedVideoRef = useRef<string | null>(null)
   // Começa mudo: o autoplay com som é bloqueado pelo navegador até o usuário
   // interagir (banner "Clique para ativar o som"). O mute é aplicado no onReady.
   const [muted, setMuted] = useState(true)
@@ -95,11 +99,21 @@ export function usePlayer(
         // Sem controles nativos (play/pause/barra): quem manda no relógio é o
         // backend; o front só reflete o estado (cue no offset certo).
         // disablekb: 1 impede atalhos de teclado (espaço/setas) no player.
-        playerVars: { controls: 0, rel: 0, playsinline: 1, disablekb: 1 },
+        // enablejsapi: 1 e origin garantem handshake via postMessage sem mismatch.
+        videoId: videoIdRef.current || undefined,
+        playerVars: {
+          controls: 0,
+          rel: 0,
+          playsinline: 1,
+          disablekb: 1,
+          enablejsapi: 1,
+          origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
         events: {
           onReady: (event) => {
             if (cancelled) return
             playerRef.current = event.target
+            console.warn('[PLAYER] onReady', new Date().toISOString())
             // Inicia mudo para contornar a política de autoplay; o usuário
             // ativa o som pelo banner/MuteButton (gesto que desbloqueia o áudio).
             event.target.mute()
@@ -120,6 +134,16 @@ export function usePlayer(
                 cueStart != null ? (Date.now() - cueStart) / 1000 : 0
               const report = onReportRef.current
               const song = songIdRef.current
+              console.warn(
+                '[PLAYER] PLAYING',
+                {
+                  song,
+                  duration,
+                  loadOffset,
+                  clientIso: new Date().toISOString(),
+                  clientMs: Date.now(),
+                },
+              )
               if (report && song) {
                 reportedVideoIdRef.current = vid
                 report({
@@ -136,6 +160,10 @@ export function usePlayer(
               if (!vid) return
               const report = onReportRef.current
               const song = songIdRef.current
+              console.warn(
+                '[PLAYER] ENDED',
+                { song, clientIso: new Date().toISOString(), clientMs: Date.now() },
+              )
               if (report && song) {
                 endedVideoIdRef.current = vid
                 report({ type: 'playback_ended', song_id: song })
@@ -144,10 +172,27 @@ export function usePlayer(
           },
           onError: (event) => {
             if (cancelled) return
+            console.warn('[PLAYER] onError', event.data)
             // Só avisa em erro fatal (vídeo removido/não incorporável).
             // Erros transitórios (2, 5) disparam enquanto a música toca.
             if (isFatalPlaybackError(event.data)) {
               setErroredVideoId(videoIdRef.current)
+            } else if (
+              reportedVideoIdRef.current === null &&
+              retriedVideoRef.current !== videoIdRef.current
+            ) {
+              // Erro transitório ANTES de começar a tocar: tenta de novo do
+              // começo (uma vez por vídeo), para o player não ficar parado.
+              const vid = videoIdRef.current
+              if (vid) {
+                retriedVideoRef.current = vid
+                if (typeof playerRef.current?.loadVideoById === 'function') {
+                  playerRef.current.loadVideoById(vid, 0)
+                } else {
+                  playerRef.current?.cueVideoById(vid, 0)
+                }
+                playerRef.current?.playVideo()
+              }
             }
           },
         },
@@ -163,52 +208,85 @@ export function usePlayer(
 
   useEffect(() => {
     if (ready && videoId) {
-      // Sincroniza com o "relógio" do backend: entra na música no ponto certo.
-      // Usa startedAtRef para não re-cue quando o backend só refina o started_at.
-      const offset = expectedOffsetSeconds(startedAtRef.current, Date.now())
+      // Transição (música nova): começa do zero, sem pular o começo.
+      // Mount/late join: entra no meio usando o relógio do backend.
+      const isTransition = lastCuedVideoRef.current !== null
+      // Arredonda para inteiro: a IFrame API do YouTube rejeita offset
+      // com vírgula (erro 2) no cue.
+      const offset = Math.floor(
+        isTransition ? 0 : expectedOffsetSeconds(startedAtRef.current, Date.now()),
+      )
+      lastCuedVideoRef.current = videoId
+      cueOffsetRef.current = offset
+      cuePerfRef.current = performance.now()
       cueStartAtRef.current = Date.now()
       reportedVideoIdRef.current = null
       endedVideoIdRef.current = null
-      playerRef.current?.cueVideoById(videoId, offset)
+      retriedVideoRef.current = null
+      console.warn(
+        '[PLAYER] cue',
+        {
+          videoId,
+          offset,
+          startedAt: startedAtRef.current,
+          clientIso: new Date().toISOString(),
+          clientMs: Date.now(),
+        },
+      )
+      if (typeof playerRef.current?.loadVideoById === 'function') {
+        playerRef.current.loadVideoById(videoId, offset)
+      } else {
+        playerRef.current?.cueVideoById(videoId, offset)
+      }
       playerRef.current?.playVideo()
     }
   }, [videoId, ready])
 
   useEffect(() => {
-    if (!ready || !videoId || !startedAt) return
+    if (!ready || !videoId) return
 
-    // Correção de drift: a cada intervalo, compara o tempo real do player com o
-    // esperado pelo relógio do backend. Se divergir (buffering/latência), faz
-    // seekTo para recolocar todos os ouvintes no mesmo segundo.
+    // Correção de drift com relógio relativo (performance.now é monotônico, sem
+    // skew). Só recua quando o player está adiantado; nunca pula para frente.
     const id = window.setInterval(() => {
       const player = playerRef.current
       if (!player) return
-      const expected = expectedOffsetSeconds(startedAt, Date.now())
+      const expected =
+        cueOffsetRef.current + (performance.now() - cuePerfRef.current) / 1000
       let actual: number
       try {
         actual = player.getCurrentTime()
       } catch {
         return
       }
-      if (shouldResync(expected, actual)) {
-        player.seekTo(expected, true)
+      if (shouldSeekBack(expected, actual)) {
+        console.warn('[PLAYER] drift', { expected, actual })
+        player.seekTo(expected, false)
       }
     }, RESYNC_INTERVAL_MS)
 
     return () => window.clearInterval(id)
-  }, [videoId, startedAt, ready])
+  }, [videoId, ready])
 
   const toggleMute = useCallback(() => {
     const player = playerRef.current
+    console.warn('[BTN] toggleMute', {
+      muted,
+      hasPlayer: !!player,
+      clientIso: new Date().toISOString(),
+    })
     if (!player) return
-    if (player.isMuted()) {
+    // Usa o estado do React como fonte da verdade (não `isMuted()`), e reforça
+    // com setVolume(100) — mais confiável que unMute() em alguns navegadores.
+    if (muted) {
       player.unMute()
+      player.setVolume(100)
+      player.playVideo()
       setMuted(false)
     } else {
       player.mute()
       setMuted(true)
     }
-  }, [])
+  }, [muted])
 
   // O erro é derivado: só conta se a música que falhou ainda é a atual. Assim,
   // trocar de música limpa o aviso sem precisar de setState dentro de effect.

@@ -188,5 +188,47 @@ Registro por tarefa: o que a IA acertou, onde errou e o que foi feito na mão.
    um baralho do histórico (sorteia sem repetir até esgotar o ciclo) e prioridade à fila
    entre uma música do DJ e outra.
 
+4. **Ainda perdendo ~30s no começo de cada música** — mesmo após a reformulação do item
+   2 (avanço guiado pelo `ENDED` + `started_at` refinado no `PLAYING`), o começo
+   continuou sendo cortado. Causa raiz: o front ainda usa o **relógio de parede**
+   (`offset = Date.now() - started_at` e a correção de drift com `seekTo` para frente a
+   cada 30s), que quebra quando o relógio do navegador diverge do servidor (skew de
+   ~30s). Correção: cravar o começo em 0 nas trocas, usar relógio relativo
+   (`performance.now`) no drift e não pular para frente.
+
 - **O que a IA acertou:** (preencher).
 - **O que foi feito na mão:** (preencher).
+
+## Sessão de debugging do áudio — tentativas que NÃO resolveram
+
+O áudio parou de sair; o player do YouTube passou a dar `onError 2` + "No available
+adapters" (o vídeo nem chega ao estado PLAYING). Hipóteses testadas e descartadas:
+
+1. **Mudo** — trocou-se o `toggleMute` para usar o estado do React + `setVolume(100)`
+   e adicionou-se `origin` nos playerVars. **Não resolveu** (o vídeo nem tocava; o
+   problema nunca foi o mute).
+2. **Offset com vírgula (float)** — suspeita de erro 2 por parâmetro inválido.
+   Aplicou-se `Math.floor` no offset. **Não resolveu** (offset inteiro 104/8 continua
+   dando erro 2).
+3. **Fallback no `onError`** — para erro transitório (2/5) antes do PLAYING, re-cue no
+   0. **Não resolveu** (segue sem PLAYING).
+
+## Ajuste da janela de repetição e deduplicação do histórico
+
+- **Problema:** A janela de repetição de 20 músicas (`REPETITION_WINDOW = 20`) impedia a repetição de músicas tocadas no histórico de forma praticamente permanente em ambientes com poucas músicas, e o histórico acumulava múltiplas entradas da mesma música, desbalanceando as probabilidades do DJ automático.
+- **Correção:**
+  1. Redução da janela de repetição no backend para 3 músicas (`REPETITION_WINDOW = 3` em `queue.py` e `config.py`), permitindo que qualquer música que já tenha tido pelo menos 3 outras músicas tocadas após ela possa ser adicionada novamente à fila.
+  2. Deduplicação no avanço de reprodução (`_advance` em `playback.py`): antes de inserir a música no histórico, registros antigos da mesma música são removidos (`delete(History).where(History.song_id == first.song_id)`), mantendo apenas uma entrada por faixa no histórico e garantindo chances iguais no DJ automático.
+- **Testes:**
+  - `test_add_allowed_after_three_songs_in_history` em `test_queue.py` (valida liberação após 3 músicas e rejeição dentro das 3 últimas).
+  - `test_advance_does_not_accumulate_duplicate_history` em `test_playback.py` (valida deduplicação no histórico).
+  - 178 testes de backend e 54 testes de frontend passando com 100% de sucesso.
+4. **Navegador** — testado no Chrome. **Continua falhando** (não é o Firefox).
+5. **Vídeo não incorporável** — testado com "Me at the zoo" (`jNQXAC9IVRw`), o vídeo
+   mais incorporável que existe. **Continua falhando** (não é o vídeo).
+6. **CORS** — suspeita de bloqueio cross-origin. **Descartado**: o "play" é direto
+   front↔YouTube (não passa pelo backend) e o front recebe `state`/`queue_updated`
+   normalmente (o CORS front↔back funciona).
+
+**Suspeita atual:** o parâmetro `origin: window.location.origin` adicionado nos
+playerVars (única mudança na URL do embed) — a ser revertido.

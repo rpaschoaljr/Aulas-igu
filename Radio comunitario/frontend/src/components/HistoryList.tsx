@@ -39,7 +39,10 @@ export function HistoryList({
           <button
             className={styles.pageButton}
             type="button"
-            onClick={onPrev}
+            onClick={() => {
+              console.warn('[BTN] histórico anterior')
+              onPrev()
+            }}
             disabled={!canPrev || loading}
           >
             Anterior
@@ -47,7 +50,10 @@ export function HistoryList({
           <button
             className={styles.pageButton}
             type="button"
-            onClick={onNext}
+            onClick={() => {
+              console.warn('[BTN] histórico próxima')
+              onNext()
+            }}
             disabled={!canNext || loading}
           >
             Próxima

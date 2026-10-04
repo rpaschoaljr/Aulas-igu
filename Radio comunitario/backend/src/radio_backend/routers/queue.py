@@ -27,7 +27,7 @@ from radio_backend.ws.payloads import to_item_out
 router = APIRouter(prefix="/queue", tags=["queue"])
 
 QUEUE_LIMIT = 3
-REPETITION_WINDOW = 20
+REPETITION_WINDOW = 3
 
 
 @router.get("", response_model=list[QueueItemOut])

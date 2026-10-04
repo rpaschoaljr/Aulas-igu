@@ -70,6 +70,7 @@ export function connectRadioSocket(
     }
 
     socket.onmessage = (event) => {
+      console.warn('[WS<-]', event.data)
       try {
         onEvent(JSON.parse(event.data) as RadioEvent)
       } catch {
@@ -90,6 +91,7 @@ export function connectRadioSocket(
 
   return {
     send: (message: object) => {
+      console.warn('[WS->]', message)
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message))
       }

@@ -22,6 +22,13 @@ export function useRadioRealtime() {
 
     const socket = connectRadioSocket(token, (event) => {
       if (event.type === 'state') {
+        console.warn('[RADIO] state', {
+          song_id: event.song_id,
+          started_at: event.started_at,
+          duration: event.duration,
+          clientIso: new Date().toISOString(),
+          clientMs: Date.now(),
+        })
         setConnected(true)
         setPlaybackState({
           current_song_id: event.song_id,

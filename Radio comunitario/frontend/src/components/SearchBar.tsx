@@ -17,6 +17,7 @@ export function SearchBar({ onAdd }: SearchBarProps) {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const q = query.trim()
+    console.warn('[BTN] buscar', { query: q })
     if (!q) return
     setLoading(true)
     setError(null)
@@ -63,7 +64,10 @@ export function SearchBar({ onAdd }: SearchBarProps) {
               <button
                 className={styles.add}
                 type="button"
-                onClick={() => onAdd(song.youtube_id)}
+                onClick={() => {
+                  console.warn('[BTN] adicionar', { youtubeId: song.youtube_id })
+                  onAdd(song.youtube_id)
+                }}
               >
                 Adicionar
               </button>

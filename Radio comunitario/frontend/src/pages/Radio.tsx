@@ -30,6 +30,7 @@ export function Radio() {
   )
 
   async function handleLogout() {
+    console.warn('[BTN] sair')
     try {
       await logoutUser()
     } catch {
@@ -41,6 +42,7 @@ export function Radio() {
   }
 
   function handleSkip() {
+    console.warn('[BTN] pular', { queueItemId: current?.id })
     if (current) {
       void vote(current.id)
     }

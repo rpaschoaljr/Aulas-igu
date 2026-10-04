@@ -4,7 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_name: str = "Radio Comunitaria"
     database_url: str = "postgresql+asyncpg://radio:radio@localhost:5432/radio"
@@ -21,7 +23,7 @@ class Settings(BaseSettings):
     smtp_from: str = "radio@example.com"
     skip_percentage: float = 0.5
     queue_limit: int = 3
-    repetition_window: int = 20
+    repetition_window: int = 3
 
 
 @lru_cache

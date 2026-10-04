@@ -27,3 +27,13 @@ export function shouldResync(
 ): boolean {
   return Math.abs(expected - actual) > threshold
 }
+
+// Decide se o player deve recuar (está adiantado). Nunca pular para frente
+// evita cortar áudio (perder o começo).
+export function shouldSeekBack(
+  expected: number,
+  actual: number,
+  threshold: number = DRIFT_THRESHOLD_SECONDS,
+): boolean {
+  return actual - expected > threshold
+}

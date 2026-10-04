@@ -125,6 +125,11 @@ async def _handle_message(
             await _send_error(websocket, "música não encontrada")
             return
 
+        print(
+            f"[BACK][WS] playback_report song_id={song_id} "
+            f"duration={duration} load_offset={load_offset}"
+        )
+
         # Duração real reportada pelo player (IFrame) corrige o relógio do
         # backend, que deixa de depender só do metadado do YouTube.
         song.duration = int(duration)
@@ -144,6 +149,8 @@ async def _handle_message(
         except ValueError:
             await _send_error(websocket, "song_id inválido")
             return
+
+        print(f"[BACK][WS] playback_ended song_id={song_id}")
 
         # ENDED = a música acabou de verdade: avança para a próxima.
         await playback.confirm_ended(session, song_id)
