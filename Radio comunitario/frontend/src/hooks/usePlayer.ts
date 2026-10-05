@@ -12,8 +12,19 @@ const SCRIPT_ID = 'youtube-iframe-api'
 
 // YT.PlayerState.PLAYING — a música começou a tocar de fato (fim do buffering).
 const PLAYER_STATE_PLAYING = 1
+// YT.PlayerState.PAUSED — o player foi pausado (atalho, fone bluetooth, etc.).
+const PLAYER_STATE_PAUSED = 2
 // YT.PlayerState.ENDED — a música chegou ao fim de verdade.
 const PLAYER_STATE_ENDED = 0
+
+const STATE_NAMES: Record<number, string> = {
+  [-1]: 'UNSTARTED (-1)',
+  0: 'ENDED (0)',
+  1: 'PLAYING (1)',
+  2: 'PAUSED (2)',
+  3: 'BUFFERING (3)',
+  5: 'CUED (5)',
+}
 
 function loadYouTubeApi(): Promise<YouTubeNamespace> {
   return new Promise((resolve) => {
@@ -121,7 +132,35 @@ export function usePlayer(
           },
           onStateChange: (event) => {
             if (cancelled) return
+            const stateName = STATE_NAMES[event.data] ?? String(event.data)
+            const currentTime = playerRef.current?.getCurrentTime() ?? 0
+            console.log(
+              `[PLAYER] 🔄 onStateChange: ${stateName} (tempo atual: ${currentTime.toFixed(1)}s)`,
+            )
+
             if (event.data === PLAYER_STATE_PLAYING) {
+              const player = playerRef.current
+              const actual = player?.getCurrentTime() ?? 0
+              const expected =
+                cuePerfRef.current > 0
+                  ? cueOffsetRef.current +
+                    (performance.now() - cuePerfRef.current) / 1000
+                  : expectedOffsetSeconds(startedAtRef.current, Date.now())
+
+              console.log('[PLAYER] ▶️ PLAYING', {
+                actual: Number(actual.toFixed(2)),
+                expected: Number(expected.toFixed(2)),
+                diff: Number((expected - actual).toFixed(2)),
+              })
+
+              // Se o player retomou de uma pausa e está atrás do tempo da rádio, avança para o tempo real:
+              if (expected - actual > 1.5 && player) {
+                console.log(
+                  `[PLAYER] ⏩ Retomando após pausa: sincronizando de ${actual.toFixed(1)}s para ${expected.toFixed(1)}s`,
+                )
+                player.seekTo(expected, true)
+              }
+
               // Começou de verdade: mede a duração real e o atraso de
               // carregamento e reporta ao backend (uma vez por música).
               if (reportedVideoIdRef.current !== null) return
@@ -135,7 +174,7 @@ export function usePlayer(
               const report = onReportRef.current
               const song = songIdRef.current
               console.warn(
-                '[PLAYER] PLAYING',
+                '[PLAYER] PLAYING (primeira confirmação)',
                 {
                   song,
                   duration,
@@ -153,6 +192,28 @@ export function usePlayer(
                   load_offset: loadOffset,
                 })
               }
+            } else if (event.data === PLAYER_STATE_PAUSED) {
+              // Rádio ao vivo: se o player for pausado externamente (teclado,
+              // fone Bluetooth, extensões), reposiciona no segundo correto e
+              // despausa imediatamente para manter a sincronia da transmissão.
+              const vid = videoIdRef.current
+              if (!vid) return
+              const player = playerRef.current
+              const actual = player?.getCurrentTime() ?? 0
+              const expected =
+                cuePerfRef.current > 0
+                  ? cueOffsetRef.current +
+                    (performance.now() - cuePerfRef.current) / 1000
+                  : expectedOffsetSeconds(startedAtRef.current, Date.now())
+
+              console.log('⏸️ [PLAYER] PAUSED detectado — ressincronizando para tempo real:', {
+                vid,
+                actual: Number(actual.toFixed(2)),
+                expected: Number(expected.toFixed(2)),
+                diff: Number((expected - actual).toFixed(2)),
+              })
+              player?.seekTo(expected, true)
+              player?.playVideo()
             } else if (event.data === PLAYER_STATE_ENDED) {
               // Acabou de verdade: avisa o backend para avançar (uma vez).
               if (endedVideoIdRef.current === videoIdRef.current) return

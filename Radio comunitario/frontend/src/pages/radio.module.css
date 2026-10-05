@@ -43,6 +43,9 @@
 }
 
 .playerCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
   width: 100%;
 }
 
@@ -99,15 +102,14 @@
   margin: 0;
 }
 
-/* Tela larga: 3 colunas (Histórico | Player | Busca) com a Fila embaixo. */
+/* Tela larga: 3 colunas (Histórico | Player + Fila | Busca) */
 @media (min-width: 768px) {
   .page {
     max-width: 1200px;
     grid-template-columns: 1fr 2fr 1fr;
     grid-template-areas:
       'header header header'
-      'history player search'
-      'queue  queue  queue';
+      'history player search';
   }
 
   .header {
@@ -124,10 +126,6 @@
 
   .searchCol {
     grid-area: search;
-  }
-
-  .queue {
-    grid-area: queue;
   }
 
   .sidebar {

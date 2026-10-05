@@ -212,6 +212,15 @@ adapters" (o vídeo nem chega ao estado PLAYING). Hipóteses testadas e descarta
    dando erro 2).
 3. **Fallback no `onError`** — para erro transitório (2/5) antes do PLAYING, re-cue no
    0. **Não resolveu** (segue sem PLAYING).
+4. **Navegador** — testado no Chrome. **Continua falhando** (não é o Firefox).
+5. **Vídeo não incorporável** — testado com "Me at the zoo" (`jNQXAC9IVRw`), o vídeo
+   mais incorporável que existe. **Continua falhando** (não é o vídeo).
+6. **CORS** — suspeita de bloqueio cross-origin. **Descartado**: o "play" é direto
+   front↔YouTube (não passa pelo backend) e o front recebe `state`/`queue_updated`
+   normalmente (o CORS front↔back funciona).
+
+**Suspeita atual:** o parâmetro `origin: window.location.origin` adicionado nos
+playerVars (única mudança na URL do embed) — a ser revertido.
 
 ## Ajuste da janela de repetição e deduplicação do histórico
 
@@ -223,12 +232,20 @@ adapters" (o vídeo nem chega ao estado PLAYING). Hipóteses testadas e descarta
   - `test_add_allowed_after_three_songs_in_history` em `test_queue.py` (valida liberação após 3 músicas e rejeição dentro das 3 últimas).
   - `test_advance_does_not_accumulate_duplicate_history` em `test_playback.py` (valida deduplicação no histórico).
   - 178 testes de backend e 54 testes de frontend passando com 100% de sucesso.
-4. **Navegador** — testado no Chrome. **Continua falhando** (não é o Firefox).
-5. **Vídeo não incorporável** — testado com "Me at the zoo" (`jNQXAC9IVRw`), o vídeo
-   mais incorporável que existe. **Continua falhando** (não é o vídeo).
-6. **CORS** — suspeita de bloqueio cross-origin. **Descartado**: o "play" é direto
-   front↔YouTube (não passa pelo backend) e o front recebe `state`/`queue_updated`
-   normalmente (o CORS front↔back funciona).
 
-**Suspeita atual:** o parâmetro `origin: window.location.origin` adicionado nos
-playerVars (única mudança na URL do embed) — a ser revertido.
+## Layout: Fila integrada à coluna do Player
+
+- **Problema:** No desktop, a Fila ficava em uma linha abaixo de todas as 3 colunas (`grid-area: queue`), sendo empurrada para baixo quando os painéis de Histórico ou Busca estavam abertos.
+- **Correção:** A seção `<section className={styles.queue}>` foi movida para dentro da `div.playerCol`, compartilhando a mesma coluna central do player com `flex-direction: column` e `gap: var(--space-5)`. O grid de 3 colunas no desktop agora mantém a Fila sempre visível e limpa logo abaixo do Player.
+- **Testes:** `App.test.tsx` e suite completa do Vitest validados sem regressões.
+
+## Sincronização automática em caso de pausa (Anti-pausa) e logs de depuração
+
+- **Problema:** Ao pausar o player, ele voltava no mesmo segundo de onde havia pausado (não avançava para o tempo real), e não havia logs no console para inspecionar os eventos internos de transição de estado da YouTube IFrame API.
+- **Causa raiz:** O cálculo de tempo dependia do relógio do sistema operacional e, ao dar `play` para retomar a reprodução (`PLAYING`), o hook não verificava o atraso acumulado em relação ao tempo ao vivo da rádio.
+- **Correção:**
+  1. No hook `usePlayer.ts`, adicionamos logs detalhados e estruturados com emojis (`[PLAYER] 🔄 onStateChange`, `[PLAYER] ⏸️ PAUSED detectado`, `[PLAYER] ▶️ PLAYING`, etc.) mapeando os nomes dos estados (`UNSTARTED`, `ENDED`, `PLAYING`, `PAUSED`, `BUFFERING`, `CUED`) e o tempo atual.
+  2. Uso do cronômetro monótono de alta precisão (`performance.now()` relativo ao `cuePerfRef`) para calcular o `expectedTime` com exatidão imune a fusos ou relógio de parede.
+  3. No evento `PLAYER_STATE_PAUSED` (2): força o `seekTo(expected, true)` e `playVideo()` imediatos.
+  4. No evento `PLAYER_STATE_PLAYING` (1): se o player estiver atrasado em mais de 1.5s (por exemplo, após ter ficado pausado externamente), faz `seekTo(expected, true)` saltando para o ponto ao vivo da rádio.
+- **Testes:** Dois testes unitários adicionados em `usePlayer.test.tsx` (`força reprodução e sincronização para o tempo real quando pausado` e `avança para o tempo real ao retomar play após ter ficado atrasado`). 56 testes no Vitest e 178 no pytest passando com 100% de sucesso.

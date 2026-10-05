@@ -72,6 +72,12 @@ export function Radio() {
           onReport={handleReport}
           onSkip={handleSkip}
         />
+        <section className={styles.queue}>
+          <h2 className={styles.subtitle}>Fila</h2>
+          {loading && <p className={styles.status}>Carregando...</p>}
+          {error && <p className={styles.error}>{error}</p>}
+          <QueueList queue={queue} />
+        </section>
       </div>
 
       {/* Botões só aparecem em tela estreita (desktop mostra tudo em colunas). */}
@@ -122,13 +128,6 @@ export function Radio() {
         <h2 className={styles.subtitle}>Buscar</h2>
         <SearchBar onAdd={(id) => void add(id)} />
       </aside>
-
-      <section className={styles.queue}>
-        <h2 className={styles.subtitle}>Fila</h2>
-        {loading && <p className={styles.status}>Carregando...</p>}
-        {error && <p className={styles.error}>{error}</p>}
-        <QueueList queue={queue} />
-      </section>
     </main>
   )
 }

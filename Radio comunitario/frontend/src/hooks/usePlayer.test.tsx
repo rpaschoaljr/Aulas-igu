@@ -34,6 +34,11 @@ class FakePlayer {
     this.opts.events?.onStateChange?.({ data: 0 })
   }
 
+  emitPaused() {
+    this.played = false
+    this.opts.events?.onStateChange?.({ data: 2 })
+  }
+
   mute() {
     this.muted = true
   }
@@ -269,5 +274,58 @@ describe('usePlayer', () => {
       type: 'playback_ended',
       song_id: 'song-1',
     })
+  })
+
+  it('força reprodução e sincronização para o tempo real quando pausado', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-21T00:00:00Z'))
+    const startedAt = '2026-09-20T23:59:50Z' // 10s atrás
+    const ref: RefObject<HTMLDivElement | null> = {
+      current: document.createElement('div'),
+    }
+
+    renderHook(() => usePlayer('abc', startedAt, ref))
+    await act(async () => {})
+    const player = FakePlayer.instances[0]
+    act(() => player.emitReady())
+
+    // Passam-se 15 segundos adicionais (total 25 segundos decorridos desde startedAt)
+    vi.advanceTimersByTime(15000)
+
+    act(() => player.emitPaused())
+
+    expect(player.seekedTo).not.toBeNull()
+    expect(player.seekedTo?.seconds).toBeCloseTo(25, 5)
+    expect(player.seekedTo?.allowSeekAhead).toBe(true)
+    expect(player.played).toBe(true)
+  })
+
+  it('avança para o tempo real ao retomar play após ter ficado atrasado', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-21T00:00:00Z'))
+    const startedAt = '2026-09-20T23:59:50Z' // 10s atrás
+    const ref: RefObject<HTMLDivElement | null> = {
+      current: document.createElement('div'),
+    }
+
+    renderHook(() => usePlayer('abc', startedAt, ref))
+    await act(async () => {})
+    const player = FakePlayer.instances[0]
+    act(() => player.emitReady())
+
+    // Passam-se 20 segundos
+    vi.advanceTimersByTime(20000)
+    // O player ainda está parado em 10 segundos
+    player.currentTime = 10
+    player.seekedTo = null
+
+    // Dispara PLAYING (ex.: usuário clicou play após ter ficado pausado)
+    act(() => player.emitPlaying())
+
+    // Deve detectar atraso de 20s e saltar para os 30s esperados
+    const seeked = player.seekedTo as { seconds: number; allowSeekAhead: boolean } | null
+    expect(seeked).not.toBeNull()
+    expect(seeked?.seconds).toBeCloseTo(30, 5)
+    expect(seeked?.allowSeekAhead).toBe(true)
   })
 })
