@@ -1,0 +1,36 @@
+    <section class="rooms-container">
+      <h2 class="section-title">Salas de Rádio</h2>
+
+      <div class="rooms-list">
+        @for (room of radioState.rooms(); track room.id) {
+          <article class="room-card" [class.active]="radioState.activeRoom() === room.name">
+            <img 
+              [src]="room.coverUrl" 
+              [alt]="room.name" 
+              class="room-cover-img"
+            />
+
+            <div class="room-info">
+              <div class="room-title-row">
+                <h3 class="room-name">{{ room.name }}</h3>
+                @if (room.isLive) {
+                  <span class="live-badge">AO VIVO</span>
+                }
+              </div>
+
+              <div class="listeners-row">
+                <span class="listeners-count">{{ room.listenersCount }} ouvintes online</span>
+                <div class="avatar-stack">
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50&auto=format&fit=crop&q=80" alt="Ouvinte" class="stack-img"/>
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&auto=format&fit=crop&q=80" alt="Ouvinte" class="stack-img"/>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-enter" (click)="enterRoom(room.name)">
+              <span>Entrar</span>
+            </button>
+          </article>
+        }
+      </div>
+    </section>

@@ -1,0 +1,68 @@
+@if (!authService.isAuthenticated()) {
+  <app-login-modal 
+    [isGateMode]="true" 
+    (loginSuccess)="onAuthSuccess($event)"
+  ></app-login-modal>
+} @else {
+  <div class="app-layout">
+    <!-- Header Fixo Superior -->
+    <app-header (requestOpenLogin)="openLoginModal()"></app-header>
+
+    <!-- Container Principal -->
+    <main class="main-content">
+      <!-- Coluna Esquerda: Histórico com Scroll Infinito (Sidebar Desktop) -->
+      <aside class="history-sidebar-column desktop-only">
+        <app-playback-history></app-playback-history>
+      </aside>
+
+      <!-- Coluna Central: Banner Ao Vivo + Disco de Vinil -->
+      <div class="central-column" [class.mobile-hidden]="currentMobileTab() !== 'salas'">
+        <!-- Banner com Indicador Vibrante de Sintonia Ao Vivo -->
+        <app-active-station></app-active-station>
+
+        <!-- Disco de Áudio de Vinil com Host do YouTube Oculto -->
+        <app-vinyl-disc-player></app-vinyl-disc-player>
+      </div>
+
+      <!-- Visões Exclusivas Mobile (< 768px) para evitar encavalamento de divs -->
+      @if (currentMobileTab() === 'historico') {
+        <div class="mobile-full-view">
+          <app-playback-history></app-playback-history>
+        </div>
+      }
+
+      <!-- Coluna Direita: Fila de Reprodução Numerada -->
+      <div class="queue-column" [class.mobile-hidden]="currentMobileTab() !== 'fila'">
+        <app-queue 
+          (requestAddTrack)="openSearchModal()"
+          (requestOpenLogin)="openLoginModal()"
+          (requestRemoveTrack)="onRemoveTrack($event)"
+          (requestSwapTrack)="onSwapTrack($event)"
+        ></app-queue>
+      </div>
+    </main>
+
+    <!-- Navegação Inferior para Mobile (< 768px) -->
+    <app-mobile-nav 
+      [activeTab]="currentMobileTab()" 
+      (tabChange)="onMobileTabChange($event)"
+    ></app-mobile-nav>
+
+    <!-- Modal de Busca / Pedir Música -->
+    @if (isSearchModalOpen()) {
+      <app-search-modal 
+        [swapTarget]="swapTargetTrack()"
+        (close)="closeSearchModal()"
+        (trackSwapped)="onTrackSwapped($event)"
+      ></app-search-modal>
+    }
+
+    <!-- Modal de Identificação / Login (Google ou Visitante Único com Emojis) -->
+    @if (isLoginModalOpen()) {
+      <app-login-modal 
+        (close)="closeLoginModal()"
+        (loginSuccess)="closeLoginModal()"
+      ></app-login-modal>
+    }
+  </div>
+}

@@ -1,0 +1,115 @@
+    <aside class="queue-panel" [class.collapsed]="isCollapsed()">
+      <!-- Cabeçalho da Fila -->
+      <div class="queue-header">
+        <div class="header-left">
+          <h2 class="queue-title">Fila de Reprodução</h2>
+          <span class="queue-badge">{{ radioState.totalTracksInQueue() }} faixas</span>
+        </div>
+        <button class="icon-toggle" (click)="toggleCollapse()" [title]="isCollapsed() ? 'Expandir fila' : 'Recolher fila'">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            @if (isCollapsed()) {
+              <polyline points="6 9 12 15 18 9"></polyline>
+            } @else {
+              <polyline points="18 15 12 9 6 15"></polyline>
+            }
+          </svg>
+        </button>
+      </div>
+
+      <!-- Indicador de Cota / Bloqueio de Pedido para Visitantes -->
+      @if (authService.canAddTracks()) {
+        <div class="quota-bar">
+          <span>Seus pedidos: <strong>{{ radioState.userQuota().active_tracks }}/{{ radioState.userQuota().max_quota }}</strong></span>
+          @if (radioState.userQuota().active_tracks >= radioState.userQuota().max_quota) {
+            <span class="quota-full">⏳ Limite de 5 atingido (aguarde tocar)</span>
+          } @else {
+            <button class="btn-add-track" (click)="requestAddTrack.emit()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Pedir Música</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="guest-login-banner">
+          <button class="btn-login-to-request" (click)="requestOpenLogin.emit()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Fazer Login para Pedir Músicas</span>
+          </button>
+          <span class="guest-warning-text">
+            ⚠️ Somente pessoas conectadas com Google podem pedir músicas ou votar para pular.
+          </span>
+        </div>
+      }
+
+      <!-- Lista Numerada de Músicas com Scroll Infinito -->
+      <div class="queue-list" (scroll)="onScroll($event)">
+        @for (track of radioState.queueSlice(); track track.queueId; let i = $index) {
+          <article class="queue-item" [class.is-playing]="isCurrentPlaying(track, i)">
+            <img [src]="track.coverUrl" [alt]="track.title" class="track-thumb"/>
+            
+            <div class="track-details">
+              <h4 class="track-name">{{ track.title }}</h4>
+              <div class="track-meta-row">
+                <span class="track-artist">{{ track.channel }}</span>
+                @if (track.addedByUserId) {
+                  <span class="badge-listener" title="Pedido enviado por ouvinte da rádio">👤 {{ track.addedBy }}</span>
+                } @else if (track.addedBy) {
+                  <span class="badge-dj" title="Programação musical selecionada pelo DJ">🎧 {{ track.addedBy }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="track-actions">
+              @if (isMyTrack(track)) {
+                <button 
+                  class="btn-track-action btn-swap" 
+                  (click)="requestSwapTrack.emit(track)" 
+                  title="Trocar por outra música"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="17 1 21 5 17 9"></polyline>
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                    <polyline points="7 23 3 19 7 15"></polyline>
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                  </svg>
+                </button>
+                <button 
+                  class="btn-track-action btn-remove" 
+                  (click)="requestRemoveTrack.emit(track)" 
+                  title="Remover da fila"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              }
+              @if (isCurrentPlaying(track, i)) {
+                <span class="track-playing-status">Tocando</span>
+              } @else {
+                <span class="track-number">{{ i + 1 }}</span>
+              }
+            </div>
+          </article>
+        }
+
+        @if (isLoadingMore()) {
+          <div class="loading-more">
+            <span class="spinner-small"></span>
+            <span>Carregando mais pedidos...</span>
+          </div>
+        } @else if (!hasMore() && radioState.queueSlice().length >= 20) {
+          <div class="end-of-queue">
+            <span>Fim da fila</span>
+          </div>
+        }
+      </div>
+    </aside>

@@ -1,0 +1,54 @@
+/* Paletas de Cores Oficiais - Figma Match (dark-theme.jpg & light-theme.jpg) */
+
+/* MODO DARK (Padrão: Preto, Azul e Vermelho) */
+:root,
+[data-theme="dark"] {
+  --bg-base: #0B0F19;               /* Fundo Principal: Preto com nuance azulada profunda */
+  --bg-surface: #111827;            /* Cards e Painéis: Azul-marinho grafite escuro */
+  --bg-surface-elevated: #1F2937;   /* Superfícies Elevadas / Hover / Inputs / Chips */
+  --bg-surface-active: #283548;
+
+  --primary-accent: #EF4444;        /* Destaque Primário: Vermelho vibrante (AO VIVO, botões) */
+  --primary-accent-hover: #DC2626;  /* Vermelho escurecido ao hover */
+  --primary-accent-rgb: 239, 68, 68;
+
+  --border-subtle: #1E293B;         /* Bordas e divisórias de baixo contraste */
+  --border-focus: #EF4444;
+
+  --text-primary: #F9FAFB;          /* Branco gelo para legibilidade máxima */
+  --text-muted: #94A3B8;            /* Cinza azulado claro para metadados e legendas */
+  --text-dim: #64748B;
+
+  --badge-live: #EF4444;
+  --status-online: #10B981;
+  --chat-bubble-me: #EF4444;
+  --chat-bubble-other: #1F2937;
+  --waveform-color: #EF4444;
+  --waveform-bg: #374151;
+}
+
+/* MODO LIGHT (Cinza, Branco e Vermelho) */
+[data-theme="light"] {
+  --bg-base: #F3F4F6;               /* Fundo Principal: Cinza claro neutro */
+  --bg-surface: #FFFFFF;            /* Cards e Painéis: Branco puro */
+  --bg-surface-elevated: #E5E7EB;    /* Superfícies Secundárias / Inputs / Chips */
+  --bg-surface-active: #D1D5DB;
+
+  --primary-accent: #EF4444;        /* Destaque Primário: Vermelho vibrante */
+  --primary-accent-hover: #E11D48;
+  --primary-accent-rgb: 239, 68, 68;
+
+  --border-subtle: #E2E8F0;         /* Bordas e divisórias suaves */
+  --border-focus: #EF4444;
+
+  --text-primary: #111827;          /* Preto grafite */
+  --text-muted: #64748B;            /* Cinza médio para descrições e status */
+  --text-dim: #94A3B8;
+
+  --badge-live: #EF4444;
+  --status-online: #10B981;
+  --chat-bubble-me: #EF4444;
+  --chat-bubble-other: #E5E7EB;
+  --waveform-color: #EF4444;
+  --waveform-bg: #D1D5DB;
+}

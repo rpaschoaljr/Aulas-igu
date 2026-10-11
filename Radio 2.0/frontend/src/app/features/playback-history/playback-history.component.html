@@ -1,0 +1,75 @@
+    <section class="playback-history-card">
+      <div class="card-header">
+        <div class="header-title-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <h2 class="card-title">Histórico de Músicas</h2>
+        </div>
+        <span class="count-tag" title="Músicas exibidas atualmente no histórico">{{ radioState.playbackHistory().length }} faixas</span>
+      </div>
+
+      <div class="history-content" (scroll)="onScroll($event)">
+        @if (radioState.playbackHistory().length === 0) {
+          <div class="empty-state">
+            <span class="empty-icon">📻</span>
+            <p class="empty-title">Nenhuma música no histórico ainda</p>
+            <span class="empty-desc">As músicas tocadas e puladas aparecerão aqui em tempo real.</span>
+          </div>
+        } @else {
+          <div class="history-list">
+            @for (item of radioState.playbackHistory(); track item.id) {
+              <article class="history-item" [class.skipped]="item.was_skipped">
+                <div class="cover-wrapper">
+                  @if (item.cover_url) {
+                    <img [src]="item.cover_url" [alt]="item.title" class="history-cover" />
+                  } @else {
+                    <div class="fallback-cover">
+                      <span>🎵</span>
+                    </div>
+                  }
+                </div>
+
+                <div class="track-details">
+                  <div class="track-top-row">
+                    <h3 class="track-title" [title]="item.title">{{ item.title }}</h3>
+                    <!-- Badge Explícita: Tocada vs Pulada -->
+                    @if (item.was_skipped) {
+                      <span class="badge badge-skipped" title="Esta música foi pulada pela votação dos ouvintes ou erro">
+                        ⏭️ Pulada
+                      </span>
+                    } @else {
+                      <span class="badge badge-played" title="Música reproduzida até o final">
+                        🟢 Tocada
+                      </span>
+                    }
+                  </div>
+
+                  <div class="track-meta-row">
+                    <span class="channel-name">{{ item.channel }}</span>
+                    <span class="meta-separator">•</span>
+                    <span class="played-time">{{ formatPlayedAt(item.played_at) }}</span>
+                    @if (item.user_nickname) {
+                      <span class="meta-separator">•</span>
+                      <span class="requester">Por {{ item.user_nickname }}</span>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+
+            @if (isLoadingMore()) {
+              <div class="loading-more">
+                <span class="spinner-small"></span>
+                <span>Carregando mais faixas...</span>
+              </div>
+            } @else if (!hasMore() && radioState.playbackHistory().length > 0) {
+              <div class="end-of-history">
+                <span>Fim do histórico</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>

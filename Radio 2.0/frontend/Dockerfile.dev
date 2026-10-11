@@ -1,0 +1,15 @@
+FROM node:alpine
+
+WORKDIR /app
+
+# Copia dependências primeiro para aproveitar cache
+COPY package*.json ./
+RUN npm ci
+
+# Copia código-fonte
+COPY . .
+
+EXPOSE 4200
+
+# Executa o servidor de desenvolvimento do Angular com polling para Hot Reload através de volumes
+CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--port", "4200", "--poll", "2000"]

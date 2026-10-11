@@ -1,0 +1,53 @@
+<section class="chat-card">
+  <div class="chat-header">
+    <div class="chat-title-group">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <h2 class="chat-title">Chatativo</h2>
+    </div>
+  </div>
+
+  <!-- Área de Mensagens com auto-scroll inteligente -->
+  <div class="chat-messages" #scrollContainer (scroll)="onScroll()">
+    @for (msg of chatMessages(); track msg.id || $index) {
+      <div class="message-row" [class.my-message]="isMyMessage(msg.userNickname)">
+        @if (!isMyMessage(msg.userNickname)) {
+          @if (isEmoji(msg.userAvatar)) {
+            <span class="msg-avatar-emoji">{{ msg.userAvatar || '🎧' }}</span>
+          } @else {
+            <img [src]="msg.userAvatar" alt="Avatar" class="msg-avatar"/>
+          }
+        }
+        <div class="msg-bubble" [class.bubble-me]="isMyMessage(msg.userNickname)">
+          <div class="msg-author">{{ msg.userNickname }}</div>
+          <p class="msg-text">{{ msg.text }}</p>
+        </div>
+        @if (isMyMessage(msg.userNickname)) {
+          @if (isEmoji(msg.userAvatar)) {
+            <span class="msg-avatar-emoji">{{ msg.userAvatar || '🎧' }}</span>
+          } @else {
+            <img [src]="msg.userAvatar" alt="Avatar" class="msg-avatar"/>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Input de Envio de Mensagem -->
+  <form class="chat-input-bar" (submit)="sendMessage($event)">
+    <input 
+      type="text" 
+      placeholder="Enviar mensagem..." 
+      class="chat-input"
+      [value]="newMessage()"
+      (input)="newMessage.set($any($event.target).value)"
+    />
+    <button type="submit" class="btn-send" title="Enviar Mensagem">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </form>
+</section>

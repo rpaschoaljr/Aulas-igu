@@ -1,0 +1,240 @@
+    <div class="modal-backdrop" (click)="handleClose()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <!-- Cabeçalho do Modal -->
+        <div class="modal-header">
+          <div class="header-left">
+            <h3 class="modal-title">
+              @if (swapTarget()) {
+                Trocar Música na Fila
+              } @else {
+                Pedir Música na Rádio
+              }
+            </h3>
+            <span class="station-badge">Radio Six-Nine</span>
+            @if (swapTarget()) {
+              <span class="swap-target-badge" [title]="swapTarget()?.title">Substituindo: {{ swapTarget()?.title }}</span>
+            }
+          </div>
+          <button class="btn-close" (click)="handleClose()" title="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Barra de Status e Limites -->
+        <div class="limit-status">
+          <div class="limit-item">
+            <span>Seus pedidos na fila: <strong>{{ radioState.myTrackCount() }}/5</strong></span>
+            @if (remainingUserQuota() <= 0) {
+              <span class="warning-text">Limite de 5 atingido!</span>
+            }
+          </div>
+          <div class="limit-item">
+            <span class="cart-counter-pill" [class.cart-full]="cartItems().length >= remainingUserQuota() || cartItems().length >= 5">
+              🛒 Carrinho: <strong>{{ cartItems().length }}/{{ remainingUserQuota() }}</strong>
+            </span>
+            <span class="max-duration-pill">Máx: 10 min</span>
+          </div>
+        </div>
+
+        <!-- Abas Mobile (< 768px) -->
+        <div class="mobile-tabs">
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab() === 'search'"
+            (click)="activeTab.set('search')"
+          >
+            🔍 Buscar Músicas
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab() === 'cart'"
+            (click)="activeTab.set('cart')"
+          >
+            🛒 Lista de Pedidos ({{ cartItems().length }}/5)
+          </button>
+        </div>
+
+        <!-- Banners de Notificação -->
+        @if (errorMessage()) {
+          <div class="error-banner">
+            {{ errorMessage() }}
+          </div>
+        }
+        @if (successMessage()) {
+          <div class="success-banner">
+            {{ successMessage() }}
+          </div>
+        }
+
+        <!-- Corpo Principal em Duas Colunas (Busca à esquerda, Carrinho à direita) -->
+        <div class="modal-body-grid">
+          
+          <!-- COLUNA 1: Busca e Acervo -->
+          <section class="search-column" [class.mobile-hidden]="activeTab() === 'cart'">
+            <!-- Campo de Pesquisa -->
+            <div class="search-input-wrap">
+              <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Digite o nome da música ou artista..." 
+                class="modal-search-input"
+                [(ngModel)]="searchQuery"
+                (input)="onSearchInput()"
+                (keyup.enter)="handleSearch()"
+              />
+              <button class="btn-search" (click)="handleSearch()" [disabled]="isLoading()">
+                {{ isLoading() ? '...' : 'Buscar' }}
+              </button>
+            </div>
+
+            <!-- Lista de Resultados / Favoritos -->
+            <div class="results-list">
+              @if (isShowingFavorites() && results().length > 0) {
+                <div class="favorites-banner">
+                  <div class="banner-title-line">
+                    <span class="banner-icon">{{ hasPersonalFavorites() ? '⭐' : '🔥' }}</span>
+                    <strong class="banner-heading">{{ hasPersonalFavorites() ? 'Suas Músicas Mais Pedidas' : 'Em Alta na Radio Six-Nine' }}</strong>
+                  </div>
+                  <span class="banner-subtitle">
+                    {{ hasPersonalFavorites() ? 'Atalhos rápidos dos seus pedidos favoritos na rádio' : 'Sugestões mais pedidas e populares da rádio' }}
+                  </span>
+                </div>
+              }
+
+              @for (res of results(); track res.youtubeId) {
+                <article class="result-item" [class.item-disabled]="res.durationSeconds > 600 || res.durationSeconds < 30">
+                  <img [src]="res.coverUrl" [alt]="res.title" class="res-thumb"/>
+                  <div class="res-info">
+                    <h4 class="res-title" [title]="res.title">{{ res.title }}</h4>
+                    <div class="res-meta-line">
+                      <span class="res-channel">{{ res.channel }}</span>
+                      <span class="res-dot">•</span>
+                      <span class="res-duration" [class.duration-exceeded]="res.durationSeconds > 600">
+                        {{ formatDuration(res.durationSeconds) }}
+                      </span>
+                      @if (res.isUserFavorite && res.requestCount) {
+                        <span class="res-dot">•</span>
+                        <span class="badge-favorite-count" title="Vezes que você pediu esta música">
+                          ⭐ Pedida {{ res.requestCount }}x
+                        </span>
+                      }
+                      @if (res.durationSeconds > 600) {
+                        <span class="badge-duration-warning">⚠️ > 10 min</span>
+                      }
+                    </div>
+                  </div>
+                  @if (swapTarget()) {
+                    <button 
+                      class="btn-add btn-swap-action" 
+                      [disabled]="res.durationSeconds > 600 || res.durationSeconds < 30 || isSending()"
+                      (click)="handleSwapTrack(res)"
+                      title="Substituir música na fila"
+                    >
+                      🔄 Trocar por esta
+                    </button>
+                  } @else {
+                    <button 
+                      class="btn-add" 
+                      [disabled]="remainingUserQuota() <= 0 || cartItems().length >= remainingUserQuota() || cartItems().length >= 5 || isTrackInCart(res.youtubeId) || res.durationSeconds > 600 || res.durationSeconds < 30"
+                      (click)="addToCart(res)"
+                      [title]="remainingUserQuota() <= 0 ? 'Limite de 5 músicas na fila atingido' : (cartItems().length >= remainingUserQuota() ? 'Limite do pedido atingido' : (isTrackInCart(res.youtubeId) ? 'Já adicionada ao carrinho' : 'Adicionar ao carrinho'))"
+                    >
+                      {{ isTrackInCart(res.youtubeId) ? '✓ No Carrinho' : '+ Adicionar' }}
+                    </button>
+                  }
+                </article>
+              } @empty {
+                <div class="empty-state">
+                  <p>Digite uma música acima para buscar no acervo da rádio.</p>
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- COLUNA 2: Carrinho / Minha Lista de Pedidos -->
+          <section class="cart-column" [class.mobile-hidden]="activeTab() === 'search'">
+            <div class="cart-header">
+              <div class="cart-title-wrap">
+                <span class="cart-title">🛒 Minha Lista de Pedidos</span>
+                <span class="cart-badge-count">{{ cartItems().length }}/5</span>
+              </div>
+              @if (cartItems().length > 0) {
+                <button class="btn-clear-cart" (click)="clearCart()" title="Limpar todos os pedidos">
+                  Limpar
+                </button>
+              }
+            </div>
+
+            <!-- Lista de Itens no Carrinho -->
+            <div class="cart-items-list">
+              @for (item of cartItems(); track item.track.youtubeId) {
+                <article class="cart-item" [class.cart-item-restricted]="item.isRestricted">
+                  <img [src]="item.track.coverUrl" [alt]="item.track.title" class="cart-thumb"/>
+                  <div class="cart-info">
+                    <h5 class="cart-item-title" [title]="item.track.title">{{ item.track.title }}</h5>
+                    <span class="cart-item-channel">{{ item.track.channel }} • {{ formatDuration(item.track.durationSeconds) }}</span>
+                    
+                    <!-- Aviso de Fila e Cooldown (Requisito Explícito) -->
+                    @if (item.isRestricted) {
+                      <div class="restriction-badge">
+                        <span class="restriction-icon">⚠️</span>
+                        <span class="restriction-text">{{ item.restrictionLabel }}</span>
+                      </div>
+                    } @else {
+                      <span class="ready-badge">✓ Pronta para a rádio</span>
+                    }
+                  </div>
+                  <button 
+                    class="btn-remove-item" 
+                    (click)="removeFromCart(item.track.youtubeId)"
+                    title="Remover da lista de pedidos"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </article>
+              } @empty {
+                <div class="cart-empty-state">
+                  <div class="cart-empty-icon">🛒</div>
+                  <p class="cart-empty-title">Nenhuma música no carrinho</p>
+                  <p class="cart-empty-subtitle">
+                    Busque músicas ao lado e clique em <strong>+ Adicionar</strong>. Você pode montar uma lista de até <strong>5 músicas</strong> para enviar de uma só vez!
+                  </p>
+                </div>
+              }
+            </div>
+
+            <!-- Rodapé e Botão de Envio do Carrinho -->
+            <div class="cart-footer">
+              <div class="cart-summary-line">
+                <span>Válidas para envio: <strong>{{ validCount() }}</strong></span>
+                @if (restrictedCount() > 0) {
+                  <span class="restricted-summary-warn">⚠️ {{ restrictedCount() }} com aviso de fila</span>
+                }
+              </div>
+
+              <button 
+                class="btn-submit-batch" 
+                [disabled]="validCount() === 0 || isSending()" 
+                (click)="sendBatch()"
+              >
+                @if (isSending()) {
+                  <span>Enviando pedidos...</span>
+                } @else {
+                  <span>🚀 Enviar Pedidos para a Rádio ({{ validCount() }})</span>
+                }
+              </button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>

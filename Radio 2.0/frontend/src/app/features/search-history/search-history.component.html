@@ -1,0 +1,64 @@
+    <section class="search-history-card">
+      <div class="card-header">
+        <h2 class="card-title">Histórico de Busca</h2>
+        <button class="btn-close" title="Recolher">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="history-content">
+        <!-- Chips Rápidos à Esquerda -->
+        <div class="chips-column">
+          @for (chip of mockWs.searchChips; track chip) {
+            <button class="search-chip">
+              <span>{{ chip }}</span>
+            </button>
+          }
+        </div>
+
+        <!-- Carrossel de Estações Ouvidas Anteriores -->
+        <div class="stations-column">
+          <span class="column-subtitle">Estações ouvidas anteriores</span>
+          <div class="stations-carousel">
+            <div class="station-mini-card">
+              <div class="station-cover pop-cover">
+                <span class="cover-tag">POP</span>
+                <span class="cover-bold">HITS</span>
+                <span class="cover-tag">24h</span>
+              </div>
+              <span class="station-name">Pop Hits 24h</span>
+            </div>
+
+            <div class="station-mini-card">
+              <img 
+                src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=160&auto=format&fit=crop&q=80" 
+                alt="Rock Clássico" 
+                class="station-img"
+              />
+              <span class="station-name">Rock Clássico</span>
+            </div>
+
+            <div class="station-mini-card">
+              <img 
+                src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=160&auto=format&fit=crop&q=80" 
+                alt="Festa & Balada" 
+                class="station-img"
+              />
+              <span class="station-name">Festa & Balada</span>
+            </div>
+
+            <div class="station-mini-card">
+              <img 
+                src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=160&auto=format&fit=crop&q=80" 
+                alt="Festa & Balada" 
+                class="station-img"
+              />
+              <span class="station-name">Festa & Balada</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>

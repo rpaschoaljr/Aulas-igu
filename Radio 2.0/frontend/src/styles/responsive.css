@@ -1,0 +1,92 @@
+/* Layout e Adaptação Responsiva Mobile-First - Rádio 2.0 */
+
+/* Breakpoints */
+:root {
+  --breakpoint-mobile: 768px;
+  --breakpoint-tablet: 1024px;
+}
+
+/* Reset Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Botões e Interações */
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  outline: none;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Scrollbar Customizada */
+::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* Classes Utilitárias */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  background-color: var(--badge-live);
+  color: #FFFFFF;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-micro);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.btn-primary {
+  background-color: var(--primary-accent);
+  color: #FFFFFF;
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body);
+  border-radius: var(--radius-md);
+  padding: 8px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-accent-hover);
+  box-shadow: var(--shadow-accent);
+}

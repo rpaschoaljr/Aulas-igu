@@ -1,0 +1,197 @@
+    <!-- Alerta de Desbloqueio de Audio (Autoplay Policy) -->
+    @if (youtubePlayer.isSoundBlocked()) {
+      <div class="audio-blocked-alert" (click)="unlockAudio()">
+        <span class="pulse-dot"></span>
+        <span>🔊 Audio pausado pelo navegador. <strong>Clique aqui para ouvir a Radio Six-Nine ao vivo!</strong></span>
+      </div>
+    }
+
+    <!-- Container do Toca-Discos / Player Central -->
+    <section class="turntable-deck" #deckContainer>
+      <!-- Barra de Controle Superior: Alternar Vídeo e Dimensionamento -->
+      <div class="deck-top-bar">
+        <div class="left-badges">
+          <span class="live-dot-pulse"></span>
+          <span class="live-badge-text">RADIO SIX-NINE • AO VIVO</span>
+          @if (radioState.isMuted()) {
+            <span class="muted-tag">MUTADO</span>
+          }
+        </div>
+
+        <div class="video-toolbar">
+          <!-- Botão de Mostrar / Ocultar Vídeo -->
+          <button 
+            class="btn-toggle-video" 
+            [class.active]="isVideoVisible()"
+            (click)="toggleVideoVisibility()"
+            title="Alternar exibição do vídeo do YouTube"
+          >
+            @if (isVideoVisible()) {
+              <span class="btn-icon">👁️</span>
+              <span>Ocultar Vídeo (Modo Vinil)</span>
+            } @else {
+              <span class="btn-icon">🎬</span>
+              <span>Mostrar Vídeo</span>
+            }
+          </button>
+
+          <!-- Controles de Tamanho Customizado quando o Vídeo estiver Visível -->
+          @if (isVideoVisible()) {
+            <div class="video-size-controls">
+              <span class="size-label">Tamanho:</span>
+              <div class="size-quick-buttons">
+                <button 
+                  class="btn-size" 
+                  [class.active]="videoWidthPercent() <= 40"
+                  (click)="setVideoSize(35)"
+                  title="Tamanho Pequeno (35%)"
+                >P</button>
+                <button 
+                  class="btn-size" 
+                  [class.active]="videoWidthPercent() > 40 && videoWidthPercent() <= 65"
+                  (click)="setVideoSize(60)"
+                  title="Tamanho Médio (60%)"
+                >M</button>
+                <button 
+                  class="btn-size" 
+                  [class.active]="videoWidthPercent() > 65 && videoWidthPercent() < 95"
+                  (click)="setVideoSize(80)"
+                  title="Tamanho Grande (80%)"
+                >G</button>
+                <button 
+                  class="btn-size btn-size-full" 
+                  [class.active]="videoWidthPercent() >= 95"
+                  (click)="setVideoSize(100)"
+                  title="Tamanho Total da Div (100%)"
+                >100% Total</button>
+              </div>
+
+              <!-- Slider para dimensionamento contínuo -->
+              <input 
+                type="range" 
+                min="30" 
+                max="100" 
+                [value]="videoWidthPercent()" 
+                (input)="onSliderChange($event)"
+                class="size-range-slider"
+                title="Ajuste fino de largura do vídeo"
+              />
+              <span class="percent-tag">{{ videoWidthPercent() }}%</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Seção do Vídeo do YouTube (Centralizada e Redimensionável com o Mouse) -->
+      <div 
+        class="video-center-container" 
+        [class.video-hidden]="!isVideoVisible()"
+        #videoCenterContainer
+      >
+        <div 
+          class="video-resizable-box" 
+          [style.width.%]="videoWidthPercent()"
+        >
+          <!-- Host IFrame do YouTube Player -->
+          <div id="youtube-player-host" class="youtube-iframe-host"></div>
+
+          <!-- Alça de Redimensionamento com o Mouse (Drag Handle) -->
+          @if (isVideoVisible()) {
+            <div 
+              class="drag-resize-handle" 
+              (mousedown)="startDragResize($event)"
+              title="Clique e arraste com o mouse para redimensionar até 100% da div"
+            >
+              <span class="handle-icon">⤡</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Disco de Audio de Vinil Analógico e Informações da Faixa -->
+      <div class="deck-main">
+        <!-- O Disco de Audio de Vinil Giratório -->
+        <div class="vinyl-slot">
+          <div class="vinyl-disc" [class.spinning]="!radioState.isMuted()">
+            <div class="vinyl-groove-1"></div>
+            <div class="vinyl-groove-2"></div>
+            <div class="vinyl-groove-3"></div>
+
+            <!-- Centro do Vinil: Capa Real da Faixa Atual -->
+            <div class="vinyl-center-label">
+              <img 
+                [src]="radioState.nowPlaying()?.coverUrl || '/assets/mock/queen.jpg'" 
+                [alt]="radioState.nowPlaying()?.title || 'Radio Six-Nine'"
+                class="album-art"
+              />
+              <div class="center-spindle-hole"></div>
+            </div>
+
+            <div class="vinyl-sheen"></div>
+          </div>
+
+          <!-- Braço da Agulha (Tonearm) -->
+          <div class="turntable-tonearm" [class.playing]="!radioState.isMuted()">
+            <div class="tonearm-base"></div>
+            <div class="tonearm-arm"></div>
+            <div class="tonearm-head"></div>
+          </div>
+        </div>
+
+        <!-- Informações da Transmissão e Faixa Atual -->
+        <div class="track-info-side">
+          <h3 class="current-track-title" [title]="radioState.nowPlaying()?.title || 'Sintonizando transmissão...'">
+            {{ radioState.nowPlaying()?.title || 'Sintonizando transmissão...' }}
+          </h3>
+
+          <div class="current-track-meta">
+            <span class="current-artist">{{ radioState.nowPlaying()?.channel || 'Radio Six-Nine Oficial' }}</span>
+            <span class="separator">•</span>
+            <span class="time-display">{{ formattedCurrentTime() }} / {{ formattedDuration() }}</span>
+          </div>
+
+          <!-- Barra de Progresso Suave da Faixa -->
+          <div class="track-progress-wrapper">
+            <div class="progress-bar-fill" [style.width.%]="progressPercentage()"></div>
+          </div>
+
+          <!-- Equalizador Dinâmico e Controles Locais Rápidos -->
+          <div class="player-actions-row">
+            <div class="equalizer-waves">
+              <span class="bar bar-1" [class.paused]="radioState.isMuted()"></span>
+              <span class="bar bar-2" [class.paused]="radioState.isMuted()"></span>
+              <span class="bar bar-3" [class.paused]="radioState.isMuted()"></span>
+              <span class="bar bar-4" [class.paused]="radioState.isMuted()"></span>
+              <span class="bar bar-5" [class.paused]="radioState.isMuted()"></span>
+              <span class="bar bar-6" [class.paused]="radioState.isMuted()"></span>
+            </div>
+
+            <div class="quick-controls">
+              <button 
+                class="btn-mute-quick" 
+                (click)="toggleMute()" 
+                [title]="radioState.isMuted() ? 'Desmutar' : 'Mutar'"
+              >
+                @if (radioState.isMuted()) {
+                  <span>🔇 Som Mutado</span>
+                } @else {
+                  <span>🔊 Transmitindo</span>
+                }
+              </button>
+
+              <div class="quick-volume">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  [value]="radioState.isMuted() ? 0 : radioState.volume()" 
+                  (input)="onVolumeChange($event)"
+                  class="volume-slider"
+                  title="Volume da Rádio"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>

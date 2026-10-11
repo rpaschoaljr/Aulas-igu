@@ -1,0 +1,61 @@
+# ==========================================
+# Segurança e Arquivos Sensíveis (Blindagem)
+# ==========================================
+# Variáveis de ambiente e segredos
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+*.env
+*.secret
+*.pem
+*.key
+*.cert
+*.crt
+client_secret*.json
+
+# ==========================================
+# Banco de Dados & Volumes
+# ==========================================
+postgres_data/
+pgdata/
+*.sql.dump
+*.dump
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# Frontend (Angular & Node)
+# ==========================================
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.cache/
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==========================================
+# Backend (Go)
+# ==========================================
+backend/bin/
+backend/server
+backend/radio-server
+*.test
+coverage.out
+
+# ==========================================
+# IDEs e Sistema Operacional
+# ==========================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.swp
+*~

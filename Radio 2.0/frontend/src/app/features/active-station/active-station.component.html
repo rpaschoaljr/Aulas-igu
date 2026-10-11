@@ -1,0 +1,56 @@
+    <section class="active-station-card">
+      <div class="station-banner-header">
+        <div class="live-pill">
+          <span class="live-indicator"></span>
+          <span class="live-text">SINTONIZADO AO VIVO</span>
+        </div>
+        <span class="audio-badge">TRANSMISSÃO HD • SEM INTERRUPÇÃO</span>
+      </div>
+
+      <div class="station-main-body">
+        <div class="station-visual">
+          <div class="vinyl-record">
+            <div class="record-center">
+              <span class="radio-symbol">📻</span>
+            </div>
+          </div>
+          <!-- Equalizador Dinâmico -->
+          <div class="sound-wave-bars">
+            <span class="eq-bar bar-1"></span>
+            <span class="eq-bar bar-2"></span>
+            <span class="eq-bar bar-3"></span>
+            <span class="eq-bar bar-4"></span>
+            <span class="eq-bar bar-5"></span>
+          </div>
+        </div>
+
+        <div class="station-meta">
+          <div class="station-title-row">
+            <h2 class="station-name">{{ radioState.activeRoom() }}</h2>
+            <span class="verified-check" title="Sala Oficial">✓</span>
+          </div>
+          <p class="station-description">
+            Sala Oficial Radio Six-Nine — Todos os ouvintes sintonizados na mesma frequência com pedidos e chat ao vivo unificados!
+          </p>
+
+          <div class="station-stats-row">
+            <div class="stat-item listeners-stat">
+              <span class="stat-icon">👥</span>
+              <span class="stat-value">{{ radioState.listenersCount() }}</span>
+              <span class="stat-label">{{ radioState.listenersCount() === 1 ? 'ouvinte conectado' : 'ouvintes conectados' }}</span>
+            </div>
+
+            <div class="stat-item queue-stat">
+              <span class="stat-icon">🎶</span>
+              <span class="stat-value">{{ radioState.totalTracksInQueue() }}</span>
+              <span class="stat-label">na fila</span>
+            </div>
+
+            <div class="stat-item sync-stat">
+              <span class="stat-icon">⚡</span>
+              <span class="stat-label">Sincronia 100% em tempo real</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>

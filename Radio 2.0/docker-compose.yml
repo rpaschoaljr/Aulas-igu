@@ -1,0 +1,72 @@
+services:
+  # ==========================================
+  # Banco de Dados: PostgreSQL 18
+  # ==========================================
+  postgres:
+    image: postgres:18-alpine
+    container_name: radio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-radio20}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-radio20}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - radio-net
+
+  # ==========================================
+  # Backend: Go 1.24+ WebSockets & REST API
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: radio-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radio20}?sslmode=disable"
+      JWT_SECRET: ${JWT_SECRET:-radio20-super-secret-jwt-key-change-in-prod}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - radio-net
+
+  # ==========================================
+  # Frontend: Angular SPA com Nginx
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: radio-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    networks:
+      - radio-net
+
+volumes:
+  postgres_data:
+    name: radio_postgres_data
+
+networks:
+  radio-net:
+    name: radio_network
+    driver: bridge
