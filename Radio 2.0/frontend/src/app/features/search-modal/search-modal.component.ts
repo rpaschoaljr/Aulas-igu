@@ -6,6 +6,7 @@ import { YouTubeCacheService } from '../../core/cache/youtube-cache.service';
 import { RadioApiService } from '../../core/api/radio-api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ErrorLoggerService } from '../../core/error/error-logger.service';
+import { RealWebSocketService } from '../../core/websocket/real-websocket.service';
 import { Track } from '../../core/radio/radio.models';
 
 export interface SearchResult {
@@ -38,6 +39,7 @@ export class SearchModalComponent implements OnInit {
   private readonly radioApi = inject(RadioApiService);
   private readonly authService = inject(AuthService);
   private readonly errorLogger = inject(ErrorLoggerService);
+  private readonly realWs = inject(RealWebSocketService, { optional: true });
 
   readonly swapTarget = input<Track | null>(null);
   readonly trackSwapped = output<Track>();
@@ -408,6 +410,9 @@ export class SearchModalComponent implements OnInit {
         console.log('[CART BATCH SUCCESS] Pedidos aceitos pelo backend:', res);
         if (res.user_quota) {
           this.radioState.setUserQuota(res.user_quota);
+        }
+        if (this.realWs) {
+          this.realWs.queueUpdated$.next({ action: 'batch_add', items: res.enqueued_items });
         }
         if (restrictedItems.length > 0) {
           this.successMessage.set(`${res.success_count} música(s) enviada(s)! As faixas com aviso de fila foram desconsideradas.`);

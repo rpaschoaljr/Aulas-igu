@@ -182,8 +182,8 @@ export class RealWebSocketService {
       case 'queue_updated':
         if (msg.payload) {
           const item = msg.payload;
-          if (item.action === 'advance') {
-            // Sinal de avanço de faixa: notifica assinantes para sincronização completa da fila
+          if (item.action || !item.track) {
+            // Ações de fila (avanço, lote, remoção, troca): notifica assinantes para sincronização
             this.queueUpdated$.next(msg.payload);
           } else {
             const currentQueue = this.radioState.queueSlice();

@@ -99,19 +99,19 @@ export class App implements OnInit {
 
     // Coalesce eventos rápidos de fila com debounce de 150ms
     this.realWs.queueUpdated$.subscribe(() => {
-      if (!this.authService.isAuthenticated()) return;
       if (this.queueDebounceTimer) {
         clearTimeout(this.queueDebounceTimer);
       }
       this.queueDebounceTimer = setTimeout(() => {
-        this.loadUserQuota(this.defaultRoomSlug);
+        if (this.authService.isAuthenticated()) {
+          this.loadUserQuota(this.defaultRoomSlug);
+        }
         this.loadQueue(this.defaultRoomSlug);
       }, 150);
     });
 
     // Coalesce eventos rápidos de histórico com debounce de 150ms
     this.realWs.historyUpdated$.subscribe(() => {
-      if (!this.authService.isAuthenticated()) return;
       if (this.historyDebounceTimer) {
         clearTimeout(this.historyDebounceTimer);
       }

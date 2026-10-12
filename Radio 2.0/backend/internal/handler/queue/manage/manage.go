@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"time"
+
 	"radio20/backend/internal/auth"
+	"radio20/backend/internal/hub"
 	"radio20/backend/internal/model"
 )
 
@@ -15,15 +18,27 @@ type QueueManager interface {
 	SwapQueueItem(ctx context.Context, roomID string, queueID string, newTrack model.Track, userID string) (*model.QueueItem, error)
 }
 
+type Broadcaster interface {
+	BroadcastToRoom(roomID string, msg hub.Message)
+}
+
+type RoomResolver interface {
+	GetRoomBySlug(ctx context.Context, slug string) (*model.Room, error)
+}
+
 type Handler struct {
 	repo       QueueManager
 	jwtService *auth.JWTService
+	hub        Broadcaster
+	roomRepo   RoomResolver
 }
 
-func NewHandler(repo QueueManager, jwtService *auth.JWTService) *Handler {
+func NewHandler(repo QueueManager, jwtService *auth.JWTService, hub Broadcaster, roomRepo RoomResolver) *Handler {
 	return &Handler{
 		repo:       repo,
 		jwtService: jwtService,
+		hub:        hub,
+		roomRepo:   roomRepo,
 	}
 }
 
@@ -66,6 +81,28 @@ func (h *Handler) HandleRemove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.hub != nil {
+		targetRoom := roomID
+		if h.roomRepo != nil {
+			if rm, err := h.roomRepo.GetRoomBySlug(r.Context(), roomID); err == nil && rm != nil {
+				targetRoom = rm.ID
+			}
+		}
+		msg := hub.Message{
+			Type:   "queue_updated",
+			RoomID: targetRoom,
+			Payload: map[string]interface{}{
+				"action":   "remove",
+				"queue_id": req.QueueID,
+			},
+			Timestamp: time.Now().UnixMilli(),
+		}
+		h.hub.BroadcastToRoom(targetRoom, msg)
+		if targetRoom != roomID {
+			h.hub.BroadcastToRoom(roomID, msg)
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -101,6 +138,29 @@ func (h *Handler) HandleSwap(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	if h.hub != nil {
+		targetRoom := roomID
+		if h.roomRepo != nil {
+			if rm, err := h.roomRepo.GetRoomBySlug(r.Context(), roomID); err == nil && rm != nil {
+				targetRoom = rm.ID
+			}
+		}
+		msg := hub.Message{
+			Type:   "queue_updated",
+			RoomID: targetRoom,
+			Payload: map[string]interface{}{
+				"action":   "swap",
+				"queue_id": req.QueueID,
+				"item":     swapped,
+			},
+			Timestamp: time.Now().UnixMilli(),
+		}
+		h.hub.BroadcastToRoom(targetRoom, msg)
+		if targetRoom != roomID {
+			h.hub.BroadcastToRoom(roomID, msg)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"time"
+
 	"radio20/backend/internal/auth"
+	"radio20/backend/internal/hub"
 	"radio20/backend/internal/model"
 	"radio20/backend/internal/repository/queue/item"
 )
@@ -16,15 +19,27 @@ type QueueAdder interface {
 	CountUserActiveTracks(ctx context.Context, roomID string, userID string) (int, error)
 }
 
+type Broadcaster interface {
+	BroadcastToRoom(roomID string, msg hub.Message)
+}
+
+type RoomResolver interface {
+	GetRoomBySlug(ctx context.Context, slug string) (*model.Room, error)
+}
+
 type Handler struct {
 	repo       QueueAdder
 	jwtService *auth.JWTService
+	hub        Broadcaster
+	roomRepo   RoomResolver
 }
 
-func NewHandler(repo QueueAdder, jwtService *auth.JWTService) *Handler {
+func NewHandler(repo QueueAdder, jwtService *auth.JWTService, hub Broadcaster, roomRepo RoomResolver) *Handler {
 	return &Handler{
 		repo:       repo,
 		jwtService: jwtService,
+		hub:        hub,
+		roomRepo:   roomRepo,
 	}
 }
 
@@ -86,6 +101,25 @@ func (h *Handler) HandleAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.hub != nil {
+		targetRoom := roomID
+		if h.roomRepo != nil {
+			if rm, err := h.roomRepo.GetRoomBySlug(r.Context(), roomID); err == nil && rm != nil {
+				targetRoom = rm.ID
+			}
+		}
+		msg := hub.Message{
+			Type:      "queue_updated",
+			RoomID:    targetRoom,
+			Payload:   createdItem,
+			Timestamp: time.Now().UnixMilli(),
+		}
+		h.hub.BroadcastToRoom(targetRoom, msg)
+		if targetRoom != roomID {
+			h.hub.BroadcastToRoom(roomID, msg)
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(createdItem)
@@ -143,6 +177,29 @@ func (h *Handler) HandleBatch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		enqueued = append(enqueued, *qi)
+	}
+
+	if h.hub != nil && len(enqueued) > 0 {
+		targetRoom := roomID
+		if h.roomRepo != nil {
+			if rm, err := h.roomRepo.GetRoomBySlug(r.Context(), roomID); err == nil && rm != nil {
+				targetRoom = rm.ID
+			}
+		}
+		msg := hub.Message{
+			Type:   "queue_updated",
+			RoomID: targetRoom,
+			Payload: map[string]interface{}{
+				"action":         "batch_add",
+				"count":          len(enqueued),
+				"enqueued_items": enqueued,
+			},
+			Timestamp: time.Now().UnixMilli(),
+		}
+		h.hub.BroadcastToRoom(targetRoom, msg)
+		if targetRoom != roomID {
+			h.hub.BroadcastToRoom(roomID, msg)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
